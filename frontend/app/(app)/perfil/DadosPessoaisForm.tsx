@@ -10,7 +10,7 @@ import { isValidPhoneNumber } from "react-phone-number-input";
 import PhoneInput from "react-phone-number-input";
 import "react-phone-number-input/style.css";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
-import { updateMe, uploadFoto } from "@/lib/api/me";
+import { getMe, updateMe, uploadFoto } from "@/lib/api/me";
 import { useCurrentUser } from "@/lib/auth/use-current-user";
 import { useAuthStore } from "@/lib/auth/store";
 import { MentoradoCard } from "@/components/community/MentoradoCard";
@@ -45,7 +45,7 @@ const schema = z.object({
     .refine((v) => !v || /^[a-zA-Z0-9_.]{1,30}$/.test(v), "Usuário inválido (sem @)"),
   descricao: z
     .string()
-    .max(140, "Máximo 140 caracteres.")
+    .max(250, "Máximo 250 caracteres.")
     .optional(),
 });
 type FormData = z.infer<typeof schema>;
@@ -57,6 +57,7 @@ function initials(nome: string) {
 export function DadosPessoaisForm() {
   const user = useCurrentUser();
   const setUser = useAuthStore((s) => s.setUser);
+  const patchUser = useAuthStore((s) => s.patchUser);
   const [emailModal, setEmailModal] = useState(false);
   const [newEmail, setNewEmail] = useState("");
   const [emailLoading, setEmailLoading] = useState(false);
@@ -104,7 +105,10 @@ export function DadosPessoaisForm() {
   });
 
   const fotoMut = useMutation({
-    mutationFn: uploadFoto,
+    mutationFn: async (file: File) => {
+      await uploadFoto(file);
+      return getMe();
+    },
     onSuccess: (updated) => {
       setUser(updated);
       toast.success("Foto atualizada!");
@@ -230,7 +234,31 @@ export function DadosPessoaisForm() {
                   defaultCountry="BR"
                   value={field.value ?? ""}
                   onChange={(v) => field.onChange(v ?? "")}
-                  className="flex h-8 items-center rounded-lg border border-input bg-transparent focus-within:border-ring focus-within:ring-3 focus-within:ring-ring/50 [&_.PhoneInputCountry]:flex [&_.PhoneInputCountry]:items-center [&_.PhoneInputCountry]:pl-2 [&_.PhoneInputCountry]:gap-1 [&_.PhoneInputCountryIcon]:size-5 [&_.PhoneInputCountrySelect]:border-0 [&_.PhoneInputCountrySelect]:bg-transparent [&_.PhoneInputCountrySelect]:outline-none [&_.PhoneInputCountrySelect]:text-sm [&_.PhoneInputCountrySelect]:px-1 [&_.PhoneInputInput]:flex-1 [&_.PhoneInputInput]:h-full [&_.PhoneInputInput]:border-0 [&_.PhoneInputInput]:bg-transparent [&_.PhoneInputInput]:px-2.5 [&_.PhoneInputInput]:text-sm [&_.PhoneInputInput]:outline-none [&_.PhoneInputInput]:placeholder:text-muted-foreground"
+                  className="flex h-9 items-center rounded-lg border border-input bg-transparent focus-within:border-ring focus-within:ring-3 focus-within:ring-ring/50 
+                  [&_.PhoneInputCountry]:flex 
+                  [&_.PhoneInputCountry]:items-center 
+                  [&_.PhoneInputCountry]:pl-2 
+                  [&_.PhoneInputCountry]:gap-1 
+                  [&_.PhoneInputCountryIcon]:size-5 
+                  [&_.PhoneInputCountrySelect]:border-0 
+                  [&_.PhoneInputCountrySelect]:bg-white 
+                  [&_.PhoneInputCountrySelect]:text-gray-900 
+                  [&_.PhoneInputCountrySelect]:outline-none 
+                  [&_.PhoneInputCountrySelect]:text-sm 
+                  [&_.PhoneInputCountrySelect]:px-1 
+                  [&_.PhoneInputInput]:flex-1 
+                  [&_.PhoneInputInput]:h-full 
+                  [&_.PhoneInputInput]:border-0 
+                  [&_.PhoneInputInput]:bg-transparent 
+                  [&_.PhoneInputInput]:px-2.5 
+                  [&_.PhoneInputInput]:text-sm 
+                  [&_.PhoneInputInput]:outline-none 
+                  [&_.PhoneInputInput]:ring-0 
+                  [&_.PhoneInputInput]:shadow-none 
+                  [&_.PhoneInputInput]:focus:outline-none 
+                  [&_.PhoneInputInput]:focus:ring-0 
+                  [&_.PhoneInputInput]:focus:shadow-none 
+                  [&_.PhoneInputInput]:placeholder:text-muted-foreground"
                 />
               )}
             />
@@ -244,13 +272,13 @@ export function DadosPessoaisForm() {
             <Label>Descrição</Label>
             <textarea
               {...register("descricao")}
-              maxLength={140}
+              maxLength={250}
               rows={3}
               placeholder="Conte um pouco sobre você..."
               className="w-full rounded-lg border border-input bg-transparent px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50 resize-none"
             />
-            <p className="text-xs text-muted-foreground">
-              {(formValues.descricao ?? "").length}/140 caracteres · Exibida no seu card na Comunidade
+            <p className="text-md text-muted-foreground">
+              {(formValues.descricao ?? "").length}/250 caracteres · Exibida no seu card na Comunidade
             </p>
             {errors.descricao && <p className="text-xs text-danger">{errors.descricao.message}</p>}
           </div>

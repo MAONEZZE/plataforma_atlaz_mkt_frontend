@@ -1,0 +1,259 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+/* Dark mode via prefers-color-scheme (sem toggle manual no MVP) */
+@custom-variant dark (@media (prefers-color-scheme: dark));
+
+/* ─── Atlaz Theme Tokens ──────────────────────────────────────────── */
+:root {
+  /* Page */
+  --page-bg: #FAFAFB;
+
+  /* Glass */
+  --glass-bg: rgba(255, 255, 255, 0.55);
+  --glass-border: rgba(255, 255, 255, 0.80);
+  --glass-blur: 24px;
+  --glass-saturate: 180%;
+  --glass-bg-soft: rgba(255, 255, 255, 0.40);
+  --glass-border-soft: rgba(255, 255, 255, 0.60);
+  --glass-blur-soft: 16px;
+
+  /* Surfaces */
+  --surface-solid: #FFFFFF;
+  --surface-solid-elevated: #F4F4F6;
+
+  /* Text */
+  --text-primary: #0A0A0F;
+  --text-secondary: rgba(10, 10, 15, 0.65);
+  --text-tertiary: rgba(10, 10, 15, 0.45);
+
+  /* Accent (Atlaz violet) */
+  --atlaz-accent: #7C3AED;
+  --atlaz-accent-soft: rgba(124, 58, 237, 0.15);
+
+  /* Semantic */
+  --success: #16A34A;
+  --warning: #CA8A04;
+  --danger: #DC2626;
+
+  /* shadcn tokens remapped to Atlaz palette */
+  --background: #FAFAFB;
+  --foreground: #0A0A0F;
+  --card: #FFFFFF;
+  --card-foreground: #0A0A0F;
+  --popover: rgba(255, 255, 255, 0.55);
+  --popover-foreground: #0A0A0F;
+  --primary: #7C3AED;
+  --primary-foreground: #FFFFFF;
+  --secondary: #F4F4F6;
+  --secondary-foreground: #0A0A0F;
+  --muted: #F4F4F6;
+  --muted-foreground: rgba(10, 10, 15, 0.65);
+  --accent: rgba(124, 58, 237, 0.10);
+  --accent-foreground: #7C3AED;
+  --destructive: #DC2626;
+  --destructive-foreground: #FFFFFF;
+  --border: rgba(10, 10, 15, 0.12);
+  --input: rgba(10, 10, 15, 0.08);
+  --ring: #7C3AED;
+  --radius: 0.75rem;
+
+  /* Recharts series colors */
+  --chart-1: #7C3AED;
+  --chart-2: #16A34A;
+  --chart-3: #CA8A04;
+  --chart-4: #A78BFA;
+  --chart-5: #3B82F6;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --page-bg: #0A0A0F;
+    --glass-bg: rgba(20, 20, 25, 0.55);
+    --glass-border: rgba(255, 255, 255, 0.10);
+    --glass-blur: 28px;
+    --glass-bg-soft: rgba(30, 30, 35, 0.50);
+    --glass-border-soft: rgba(255, 255, 255, 0.08);
+    --glass-blur-soft: 18px;
+    --surface-solid: #16161B;
+    --surface-solid-elevated: #1E1E25;
+    --text-primary: #FAFAFB;
+    --text-secondary: rgba(250, 250, 251, 0.70);
+    --text-tertiary: rgba(250, 250, 251, 0.50);
+    --atlaz-accent: #A78BFA;
+    --atlaz-accent-soft: rgba(167, 139, 250, 0.20);
+    --success: #4ADE80;
+    --warning: #FACC15;
+    --danger: #F87171;
+
+    --background: #0A0A0F;
+    --foreground: #FAFAFB;
+    --card: #16161B;
+    --card-foreground: #FAFAFB;
+    --popover: rgba(20, 20, 25, 0.55);
+    --popover-foreground: #FAFAFB;
+    --primary: #A78BFA;
+    --primary-foreground: #0A0A0F;
+    --secondary: #1E1E25;
+    --secondary-foreground: #FAFAFB;
+    --muted: #1E1E25;
+    --muted-foreground: rgba(250, 250, 251, 0.70);
+    --accent: rgba(167, 139, 250, 0.15);
+    --accent-foreground: #A78BFA;
+    --destructive: #F87171;
+    --destructive-foreground: #0A0A0F;
+    --border: rgba(255, 255, 255, 0.10);
+    --input: rgba(255, 255, 255, 0.08);
+    --ring: #A78BFA;
+
+    --chart-1: #A78BFA;
+    --chart-2: #4ADE80;
+    --chart-3: #FACC15;
+    --chart-4: #C084FC;
+    --chart-5: #60A5FA;
+  }
+}
+
+/* ─── Tailwind v4 custom theme tokens ────────────────────────────── */
+@theme inline {
+  --font-sans: var(--font-sans);
+  --font-mono: var(--font-geist-mono);
+
+  /* shadcn base */
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+
+  /* Atlaz-specific */
+  --color-atlaz-accent: var(--atlaz-accent);
+  --color-atlaz-accent-soft: var(--atlaz-accent-soft);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-danger: var(--danger);
+  --color-surface-solid: var(--surface-solid);
+  --color-surface-elevated: var(--surface-solid-elevated);
+  --color-text-primary: var(--text-primary);
+  --color-text-secondary: var(--text-secondary);
+  --color-text-tertiary: var(--text-tertiary);
+  --color-page-bg: var(--page-bg);
+
+  /* Charts */
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+}
+
+/* ─── Glass utility classes ──────────────────────────────────────── */
+.glass {
+  background: var(--glass-bg);
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  border: 1px solid var(--glass-border);
+  border-radius: 1rem;
+}
+
+.glass-soft {
+  background: var(--glass-bg-soft);
+  backdrop-filter: blur(var(--glass-blur-soft)) saturate(160%);
+  -webkit-backdrop-filter: blur(var(--glass-blur-soft)) saturate(160%);
+  border: 1px solid var(--glass-border-soft);
+  border-radius: 1rem;
+}
+
+.solid-surface {
+  background: var(--surface-solid);
+  border-radius: 1rem;
+}
+
+/* Fallback for browsers without backdrop-filter */
+@supports not (backdrop-filter: blur(1px)) {
+  .glass,
+  .glass-soft {
+    background: var(--surface-solid);
+  }
+}
+
+/* Mobile: reduce blur */
+@media (max-width: 768px) {
+  :root {
+    --glass-blur: 16px;
+    --glass-blur-soft: 12px;
+  }
+}
+
+/* ─── Page gradient background ───────────────────────────────────── */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(at 20% 20%, rgba(124, 58, 237, 0.15), transparent 40%),
+    radial-gradient(at 80% 30%, rgba(59, 130, 246, 0.10), transparent 45%),
+    radial-gradient(at 50% 80%, rgba(236, 72, 153, 0.10), transparent 40%);
+}
+
+@media (prefers-color-scheme: dark) {
+  body::before {
+    background:
+      radial-gradient(at 20% 20%, rgba(124, 58, 237, 0.20), transparent 40%),
+      radial-gradient(at 80% 30%, rgba(59, 130, 246, 0.15), transparent 45%),
+      radial-gradient(at 50% 80%, rgba(236, 72, 153, 0.15), transparent 40%);
+  }
+}
+
+/* ─── Accessibility ──────────────────────────────────────────────── */
+*:focus-visible {
+  outline: 2px solid var(--atlaz-accent);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ─── Base ───────────────────────────────────────────────────────── */
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    background-color: var(--page-bg);
+    color: var(--text-primary);
+    font-family: var(--font-sans), system-ui, sans-serif;
+    overflow-x: hidden;
+  }
+  html {
+    @apply font-sans;
+  }
+}

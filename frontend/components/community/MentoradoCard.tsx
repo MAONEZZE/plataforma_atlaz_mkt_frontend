@@ -66,7 +66,7 @@ export function MentoradoCard({ mentorado }: MentoradoCardProps) {
       <div className="space-y-1 min-h-[3rem]">
         <p className="font-semibold text-sm leading-tight">{nome}</p>
         {descricao && (
-          <p className="text-xs text-muted-foreground leading-snug line-clamp-2">{descricao}</p>
+          <p className="text-sm text-muted-foreground leading-snug font-medium break-words">{descricao}</p>
         )}
       </div>
 

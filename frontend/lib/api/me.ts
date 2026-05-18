@@ -21,9 +21,7 @@ export async function updateMe(input: UpdateMeInput): Promise<Usuario> {
 
 export async function uploadFoto(file: File): Promise<Usuario> {
   const fd = new FormData();
-  fd.append("file", file);
-  const { data } = await api.post<Usuario>("/me/foto", fd, {
-    headers: { "Content-Type": "multipart/form-data" },
-  });
+  fd.append("foto", file);
+  const { data } = await api.post<Usuario>("/me/foto", fd);
   return data;
 }
