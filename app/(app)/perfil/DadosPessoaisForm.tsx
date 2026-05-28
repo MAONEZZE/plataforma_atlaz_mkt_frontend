@@ -50,6 +50,11 @@ const schema = z.object({
 });
 type FormData = z.infer<typeof schema>;
 
+function toE164(phone: string | null | undefined): string {
+  if (!phone) return "";
+  return phone.startsWith("+") ? phone : `+${phone}`;
+}
+
 function initials(name: string | null | undefined) {
   if (!name) return "";
   return name.split(" ").slice(0, 2).map((w) => w[0]).join("").toUpperCase();
@@ -74,7 +79,7 @@ export function DadosPessoaisForm() {
     resolver: zodResolver(schema),
     defaultValues: {
       name: user?.name ?? "",
-      phone: user?.phone ?? "",
+      phone: toE164(user?.phone),
       linkedin_url: user?.linkedin_url ?? "",
       instagram_username: user?.instagram_username ?? "",
       description: user?.description ?? "",
@@ -85,7 +90,7 @@ export function DadosPessoaisForm() {
     if (user) {
       reset({
         name: user.name,
-        phone: user.phone ?? "",
+        phone: toE164(user.phone),
         linkedin_url: user.linkedin_url ?? "",
         instagram_username: user.instagram_username ?? "",
         description: user.description ?? "",

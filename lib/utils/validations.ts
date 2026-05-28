@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { isValidPhoneNumber } from "react-phone-number-input";
 
 export const loginSchema = z.object({
   email: z.string().email("Email inválido."),
@@ -16,3 +17,15 @@ export const metricaSchema = z.object({
 });
 
 export type MetricaFormInput = z.infer<typeof metricaSchema>;
+
+export const cadastroClienteSchema = z.object({
+  name: z.string().min(1, "Nome obrigatório."),
+  email: z.string().email("Email inválido."),
+  password: z.string().min(8, "Senha deve ter no mínimo 8 caracteres."),
+  phone: z
+    .string()
+    .min(1, "Telefone obrigatório.")
+    .refine((v) => isValidPhoneNumber(v), "Telefone inválido."),
+});
+
+export type CadastroClienteInput = z.infer<typeof cadastroClienteSchema>;

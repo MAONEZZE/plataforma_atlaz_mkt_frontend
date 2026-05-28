@@ -12,8 +12,9 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "Atlaz",
-  description: "Plataforma Atlas Sales",
+  title: "HUB",
+  description: "Hábitos, União e Business",
+  icons: { icon: "/Atlaz.png" },
 };
 
 export default function RootLayout({
@@ -24,7 +25,7 @@ export default function RootLayout({
   return (
     <html lang="pt-BR" className={`${inter.variable} h-full antialiased`}>
       <body className="min-h-full flex flex-col" style={{ backgroundColor: "var(--page-bg)" }}>
-        <NextTopLoader color="#7C3AED" showSpinner={false} height={3} />
+        <NextTopLoader color="#8B6B55" showSpinner={false} height={3} />
         <QueryProvider>
           <TooltipProvider>{children}</TooltipProvider>
         </QueryProvider>

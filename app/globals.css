@@ -8,110 +8,110 @@
 /* ─── Atlaz Theme Tokens ──────────────────────────────────────────── */
 :root {
   /* Page */
-  --page-bg: #FAFAFB;
+  --page-bg: #FAF9F7;
 
   /* Glass */
-  --glass-bg: rgba(255, 255, 255, 0.55);
-  --glass-border: rgba(255, 255, 255, 0.80);
+  --glass-bg: rgba(255, 253, 250, 0.55);
+  --glass-border: rgba(255, 253, 250, 0.80);
   --glass-blur: 24px;
   --glass-saturate: 180%;
-  --glass-bg-soft: rgba(255, 255, 255, 0.40);
-  --glass-border-soft: rgba(255, 255, 255, 0.60);
+  --glass-bg-soft: rgba(255, 253, 250, 0.40);
+  --glass-border-soft: rgba(255, 253, 250, 0.60);
   --glass-blur-soft: 16px;
 
   /* Surfaces */
   --surface-solid: #FFFFFF;
-  --surface-solid-elevated: #F4F4F6;
+  --surface-solid-elevated: #F2EDE8;
 
   /* Text */
-  --text-primary: #0A0A0F;
-  --text-secondary: rgba(10, 10, 15, 0.65);
-  --text-tertiary: rgba(10, 10, 15, 0.45);
+  --text-primary: #1A1410;
+  --text-secondary: rgba(26, 20, 16, 0.65);
+  --text-tertiary: rgba(26, 20, 16, 0.45);
 
-  /* Accent (Atlaz violet) */
-  --atlaz-accent: #7C3AED;
-  --atlaz-accent-soft: rgba(124, 58, 237, 0.15);
+  /* Accent (Atlaz warm taupe) */
+  --atlaz-accent: #8B6B55;
+  --atlaz-accent-soft: rgba(139, 107, 85, 0.15);
 
   /* Semantic */
-  --success: #16A34A;
-  --warning: #CA8A04;
-  --danger: #DC2626;
+  --success: #4A7A45;
+  --warning: #B8820A;
+  --danger: #C4392A;
 
   /* shadcn tokens remapped to Atlaz palette */
-  --background: #FAFAFB;
-  --foreground: #0A0A0F;
+  --background: #FAF9F7;
+  --foreground: #1A1410;
   --card: #FFFFFF;
-  --card-foreground: #0A0A0F;
-  --popover: rgba(255, 255, 255, 0.55);
-  --popover-foreground: #0A0A0F;
-  --primary: #7C3AED;
+  --card-foreground: #1A1410;
+  --popover: rgba(255, 253, 250, 0.55);
+  --popover-foreground: #1A1410;
+  --primary: #8B6B55;
   --primary-foreground: #FFFFFF;
-  --secondary: #F4F4F6;
-  --secondary-foreground: #0A0A0F;
-  --muted: #F4F4F6;
-  --muted-foreground: rgba(10, 10, 15, 0.65);
-  --accent: rgba(124, 58, 237, 0.10);
-  --accent-foreground: #7C3AED;
-  --destructive: #DC2626;
+  --secondary: #F2EDE8;
+  --secondary-foreground: #1A1410;
+  --muted: #F2EDE8;
+  --muted-foreground: rgba(26, 20, 16, 0.65);
+  --accent: rgba(139, 107, 85, 0.10);
+  --accent-foreground: #8B6B55;
+  --destructive: #C4392A;
   --destructive-foreground: #FFFFFF;
-  --border: rgba(10, 10, 15, 0.12);
-  --input: rgba(10, 10, 15, 0.08);
-  --ring: #7C3AED;
+  --border: rgba(26, 20, 16, 0.12);
+  --input: rgba(26, 20, 16, 0.08);
+  --ring: #8B6B55;
   --radius: 0.75rem;
 
   /* Recharts series colors */
-  --chart-1: #7C3AED;
-  --chart-2: #16A34A;
-  --chart-3: #CA8A04;
-  --chart-4: #A78BFA;
-  --chart-5: #3B82F6;
+  --chart-1: #8B6B55;
+  --chart-2: #4A7A45;
+  --chart-3: #B8820A;
+  --chart-4: #B8A898;
+  --chart-5: #6B8BA4;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --page-bg: #0A0A0F;
-    --glass-bg: rgba(20, 20, 25, 0.55);
-    --glass-border: rgba(255, 255, 255, 0.10);
+    --page-bg: #0F0C0A;
+    --glass-bg: rgba(26, 21, 18, 0.55);
+    --glass-border: rgba(255, 253, 250, 0.10);
     --glass-blur: 28px;
-    --glass-bg-soft: rgba(30, 30, 35, 0.50);
-    --glass-border-soft: rgba(255, 255, 255, 0.08);
+    --glass-bg-soft: rgba(34, 29, 25, 0.50);
+    --glass-border-soft: rgba(255, 253, 250, 0.08);
     --glass-blur-soft: 18px;
-    --surface-solid: #16161B;
-    --surface-solid-elevated: #1E1E25;
-    --text-primary: #FAFAFB;
-    --text-secondary: rgba(250, 250, 251, 0.70);
-    --text-tertiary: rgba(250, 250, 251, 0.50);
-    --atlaz-accent: #A78BFA;
-    --atlaz-accent-soft: rgba(167, 139, 250, 0.20);
-    --success: #4ADE80;
-    --warning: #FACC15;
-    --danger: #F87171;
+    --surface-solid: #1A1512;
+    --surface-solid-elevated: #221D19;
+    --text-primary: #FAF9F7;
+    --text-secondary: rgba(250, 249, 247, 0.70);
+    --text-tertiary: rgba(250, 249, 247, 0.50);
+    --atlaz-accent: #C4A898;
+    --atlaz-accent-soft: rgba(196, 168, 152, 0.20);
+    --success: #6ABF63;
+    --warning: #E6A82A;
+    --danger: #E86050;
 
-    --background: #0A0A0F;
-    --foreground: #FAFAFB;
-    --card: #16161B;
-    --card-foreground: #FAFAFB;
-    --popover: rgba(20, 20, 25, 0.55);
-    --popover-foreground: #FAFAFB;
-    --primary: #A78BFA;
-    --primary-foreground: #0A0A0F;
-    --secondary: #1E1E25;
-    --secondary-foreground: #FAFAFB;
-    --muted: #1E1E25;
-    --muted-foreground: rgba(250, 250, 251, 0.70);
-    --accent: rgba(167, 139, 250, 0.15);
-    --accent-foreground: #A78BFA;
-    --destructive: #F87171;
-    --destructive-foreground: #0A0A0F;
-    --border: rgba(255, 255, 255, 0.10);
-    --input: rgba(255, 255, 255, 0.08);
-    --ring: #A78BFA;
+    --background: #0F0C0A;
+    --foreground: #FAF9F7;
+    --card: #1A1512;
+    --card-foreground: #FAF9F7;
+    --popover: rgba(26, 21, 18, 0.55);
+    --popover-foreground: #FAF9F7;
+    --primary: #C4A898;
+    --primary-foreground: #0F0C0A;
+    --secondary: #221D19;
+    --secondary-foreground: #FAF9F7;
+    --muted: #221D19;
+    --muted-foreground: rgba(250, 249, 247, 0.70);
+    --accent: rgba(196, 168, 152, 0.15);
+    --accent-foreground: #C4A898;
+    --destructive: #E86050;
+    --destructive-foreground: #0F0C0A;
+    --border: rgba(255, 253, 250, 0.10);
+    --input: rgba(255, 253, 250, 0.08);
+    --ring: #C4A898;
 
-    --chart-1: #A78BFA;
-    --chart-2: #4ADE80;
-    --chart-3: #FACC15;
-    --chart-4: #C084FC;
-    --chart-5: #60A5FA;
+    --chart-1: #C4A898;
+    --chart-2: #6ABF63;
+    --chart-3: #E6A82A;
+    --chart-4: #D4C4B8;
+    --chart-5: #8AAFC4;
   }
 }
 
@@ -212,17 +212,17 @@ body::before {
   z-index: -1;
   pointer-events: none;
   background:
-    radial-gradient(at 20% 20%, rgba(124, 58, 237, 0.15), transparent 40%),
-    radial-gradient(at 80% 30%, rgba(59, 130, 246, 0.10), transparent 45%),
-    radial-gradient(at 50% 80%, rgba(236, 72, 153, 0.10), transparent 40%);
+    radial-gradient(at 20% 20%, rgba(139, 107, 85, 0.15), transparent 40%),
+    radial-gradient(at 80% 30%, rgba(184, 168, 152, 0.10), transparent 45%),
+    radial-gradient(at 50% 80%, rgba(196, 155, 120, 0.10), transparent 40%);
 }
 
 @media (prefers-color-scheme: dark) {
   body::before {
     background:
-      radial-gradient(at 20% 20%, rgba(124, 58, 237, 0.20), transparent 40%),
-      radial-gradient(at 80% 30%, rgba(59, 130, 246, 0.15), transparent 45%),
-      radial-gradient(at 50% 80%, rgba(236, 72, 153, 0.15), transparent 40%);
+      radial-gradient(at 20% 20%, rgba(139, 107, 85, 0.20), transparent 40%),
+      radial-gradient(at 80% 30%, rgba(184, 168, 152, 0.15), transparent 45%),
+      radial-gradient(at 50% 80%, rgba(196, 155, 120, 0.15), transparent 40%);
   }
 }
 

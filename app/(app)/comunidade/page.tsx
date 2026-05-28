@@ -22,7 +22,7 @@ export default function ComunidadePage() {
 
   const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ["comunidade", page],
-    queryFn: () => listComunidade({ page, page_size: PAGE_SIZE }),
+    queryFn: () => listComunidade({ page, page_size: PAGE_SIZE, include_admins: true }),
   });
 
   const items = data?.items ?? [];

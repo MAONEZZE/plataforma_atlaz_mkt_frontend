@@ -112,7 +112,7 @@ function ClientManageModal({ client, onClose }: ClientManageModalProps) {
 
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="glass max-w-md" showCloseButton={false}>
+      <DialogContent className="max-w-md" showCloseButton={false}>
         <DialogHeader>
           <DialogTitle>Gerenciar — {client.name}</DialogTitle>
         </DialogHeader>
@@ -336,16 +336,16 @@ export default function CadastrarClientePage() {
   });
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-[380px_1fr] gap-6 items-start">
-      {/* Left — form */}
-      <div className="space-y-5">
-        <div>
-          <h1 className="text-2xl font-semibold">Cadastrar Cliente</h1>
-          <p className="text-sm text-muted-foreground mt-0.5">
-            Cria uma nova conta de cliente na plataforma.
-          </p>
-        </div>
+    <div className="space-y-5">
+      <div>
+        <h1 className="text-2xl font-semibold">Cadastrar Cliente</h1>
+        <p className="text-sm text-muted-foreground mt-0.5">
+          Cria uma nova conta de cliente na plataforma.
+        </p>
+      </div>
 
+      <div className="grid grid-cols-1 lg:grid-cols-[380px_1fr] gap-6 items-start">
+        {/* Left — form */}
         <GlassCard variant="solid" className="space-y-4">
           <form
             onSubmit={handleSubmit((d) => mut.mutate(d))}
@@ -442,10 +442,10 @@ export default function CadastrarClientePage() {
             </Button>
           </form>
         </GlassCard>
-      </div>
 
-      {/* Right — clients table */}
-      <ClientesTable />
+        {/* Right — clients table */}
+        <ClientesTable />
+      </div>
     </div>
   );
 }

@@ -17,6 +17,7 @@ export interface Aula {
   duration_minutes: number | null;
   order: number;
   completed: boolean;
+  is_doc?: boolean;
 }
 
 export interface Modulo {
@@ -41,7 +42,9 @@ export interface AulaDetalhe {
   module_id: string;
   title: string;
   description: string | null;
-  drive_file_id: string;
+  drive_file_id: string | null;
+  document_url: string | null;
+  is_doc: boolean;
   duration_minutes: number | null;
   completed: boolean;
   track: { id: string; title: string };

@@ -19,9 +19,18 @@ export async function updateMe(input: UpdateMeInput): Promise<Usuario> {
   return data;
 }
 
+const EXT_MIME: Record<string, string> = {
+  jpg: "image/jpeg",
+  jpeg: "image/jpeg",
+  png: "image/png",
+  webp: "image/webp",
+};
+
 export async function uploadFoto(file: File): Promise<{ photo_url: string }> {
+  const ext = file.name.split(".").pop()?.toLowerCase() ?? "";
+  const mimeType = file.type || EXT_MIME[ext] || "image/jpeg";
   const fd = new FormData();
-  fd.append("photo", file);
+  fd.append("photo", file.slice(0, file.size, mimeType), file.name);
   const { data } = await api.post<{ photo_url: string }>("/me/photo", fd);
   return data;
 }

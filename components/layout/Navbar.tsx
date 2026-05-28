@@ -3,28 +3,46 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { usePathname } from "next/navigation";
-import { Menu } from "lucide-react";
+import { usePathname, useRouter } from "next/navigation";
+import { Menu, ChevronDown } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { UserDropdown } from "./UserDropdown";
 import { useCurrentUser } from "@/lib/auth/use-current-user";
 import { cn } from "@/lib/utils";
 
-const clientLinks = [
-  { href: "/dashboard", label: "Dashboard" },
-  { href: "/trilhas", label: "Trilhas" },
-  { href: "/produto", label: "Produto" },
-  { href: "/etapa", label: "Etapas" },
-  { href: "/comunidade", label: "Comunidade" },
+type NavItem =
+  | { type: "link"; href: string; label: string }
+  | { type: "dropdown"; label: string; matchPrefixes: string[]; items: { href: string; label: string }[] };
+
+const clientLinks: NavItem[] = [
+  { type: "link", href: "/dashboard", label: "Dashboard" },
+  { type: "link", href: "/trilhas", label: "Trilhas" },
+  { type: "link", href: "/produto", label: "Produto" },
+  { type: "link", href: "/etapa", label: "Etapas" },
+  { type: "link", href: "/comunidade", label: "Comunidade" },
 ];
 
-const adminLinks = [
-  { href: "/admin/dashboard", label: "Dashboard" },
-  { href: "/admin/clientes", label: "Clientes" },
-  { href: "/admin/trilhas", label: "Trilhas" },
-  { href: "/admin/produtos", label: "Produtos" },
-  { href: "/admin/etapas", label: "Etapas" },
-  { href: "/comunidade", label: "Comunidade" },
+const adminLinks: NavItem[] = [
+  { type: "link", href: "/admin/dashboard", label: "Dashboard" },
+  { type: "link", href: "/admin/clientes", label: "Clientes" },
+  { type: "link", href: "/admin/produtos", label: "Produtos" },
+  { type: "link", href: "/admin/etapas", label: "Etapas" },
+  {
+    type: "dropdown",
+    label: "Trilhas",
+    matchPrefixes: ["/admin/trilhas", "/trilhas"],
+    items: [
+      { href: "/admin/trilhas", label: "Gerenciar Trilhas" },
+      { href: "/trilhas", label: "Visualizar Trilhas" },
+    ],
+  },
+  { type: "link", href: "/comunidade", label: "Comunidade" },
 ];
 
 function NavLink({ href, label }: { href: string; label: string }) {
@@ -43,6 +61,53 @@ function NavLink({ href, label }: { href: string; label: string }) {
       {label}
     </Link>
   );
+}
+
+function NavDropdown({
+  label,
+  items,
+  matchPrefixes,
+}: {
+  label: string;
+  items: { href: string; label: string }[];
+  matchPrefixes: string[];
+}) {
+  const pathname = usePathname();
+  const router = useRouter();
+  const active = matchPrefixes.some(
+    (p) => pathname === p || pathname.startsWith(p + "/") || pathname === p,
+  );
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger
+        className={cn(
+          "flex items-center gap-1 text-sm font-medium transition-colors border-b-2 pb-0.5 focus:outline-none cursor-pointer",
+          active
+            ? "border-primary text-primary"
+            : "border-transparent text-muted-foreground hover:text-foreground hover:border-border",
+        )}
+      >
+        {label}
+        <ChevronDown className="size-3.5" />
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="start" className="solid-surface w-48 border border-border shadow-md">
+        {items.map((it) => (
+          <DropdownMenuItem
+            key={it.href}
+            onClick={() => router.push(it.href)}
+            className="cursor-pointer"
+          >
+            {it.label}
+          </DropdownMenuItem>
+        ))}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
+
+function NavItemRender({ item }: { item: NavItem }) {
+  if (item.type === "link") return <NavLink href={item.href} label={item.label} />;
+  return <NavDropdown label={item.label} items={item.items} matchPrefixes={item.matchPrefixes} />;
 }
 
 export function Navbar() {
@@ -101,7 +166,7 @@ export function Navbar() {
         {/* Desktop links */}
         <nav className="hidden md:flex items-center gap-6">
           {links.map((l) => (
-            <NavLink key={l.href} {...l} />
+            <NavItemRender key={l.type === "link" ? l.href : `dd-${l.label}`} item={l} />
           ))}
         </nav>
 
@@ -117,9 +182,13 @@ export function Navbar() {
             </SheetTrigger>
             <SheetContent side="right" className="glass w-64 pt-10">
               <nav className="flex flex-col gap-4 mt-4">
-                {links.map((l) => (
-                  <NavLink key={l.href} {...l} />
-                ))}
+                {links.flatMap((l) =>
+                  l.type === "link"
+                    ? [<NavLink key={l.href} href={l.href} label={l.label} />]
+                    : l.items.map((sub) => (
+                        <NavLink key={`${l.label}-${sub.href}`} href={sub.href} label={sub.label} />
+                      )),
+                )}
               </nav>
             </SheetContent>
           </Sheet>

@@ -35,10 +35,11 @@ import {
 const produtoSchema = z.object({
   name: z.string().min(1, "Nome obrigatório"),
   value: z
-    .number({ invalid_type_error: "Valor obrigatório" })
+    .number()
     .min(0, "Mínimo 0"),
+  description: z.string().optional(),
 });
-type ProdutoInput = z.infer<typeof produtoSchema>;
+type ProdutoFormInput = z.infer<typeof produtoSchema>;
 
 function formatBRL(value: number) {
   return new Intl.NumberFormat("pt-BR", {
@@ -57,32 +58,40 @@ export default function AdminProdutosPage() {
   const [editing, setEditing] = useState<Produto | null>(null);
   const [deleting, setDeleting] = useState<Produto | null>(null);
 
-  const createForm = useForm<ProdutoInput>({
+  const createForm = useForm<ProdutoFormInput>({
     resolver: zodResolver(produtoSchema),
-    defaultValues: { name: "", value: 0 },
+    defaultValues: { name: "", value: 0, description: "" },
   });
 
-  const editForm = useForm<ProdutoInput>({
+  const editForm = useForm<ProdutoFormInput>({
     resolver: zodResolver(produtoSchema),
   });
 
   function openEdit(p: Produto) {
-    editForm.reset({ name: p.name, value: p.value });
+    editForm.reset({ name: p.name, value: p.value, description: p.description ?? "" });
     setEditing(p);
   }
 
+  function toPayload(d: ProdutoFormInput) {
+    return {
+      name: d.name,
+      value: d.value,
+      description: d.description?.trim() ? d.description.trim() : null,
+    };
+  }
+
   const createMut = useMutation({
-    mutationFn: (d: ProdutoInput) => adminProdutos.create(d),
+    mutationFn: (d: ProdutoFormInput) => adminProdutos.create(toPayload(d)),
     onSuccess: () => {
       toast.success("Produto criado!");
-      createForm.reset({ name: "", value: 0 });
+      createForm.reset({ name: "", value: 0, description: "" });
       queryClient.invalidateQueries({ queryKey: ["produtos"] });
     },
     onError: () => toast.error("Erro ao criar produto."),
   });
 
   const editMut = useMutation({
-    mutationFn: (d: ProdutoInput) => adminProdutos.update(editing!.id, d),
+    mutationFn: (d: ProdutoFormInput) => adminProdutos.update(editing!.id, toPayload(d)),
     onSuccess: () => {
       toast.success("Produto atualizado!");
       setEditing(null);
@@ -102,15 +111,16 @@ export default function AdminProdutosPage() {
   });
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-[380px_1fr] gap-6 items-start">
-      {/* Left — create form */}
-      <div className="space-y-5">
-        <div>
-          <h1 className="text-2xl font-semibold">Produtos</h1>
-          <p className="text-sm text-muted-foreground mt-0.5">
-            Gerencie os produtos da plataforma.
-          </p>
-        </div>
+    <div className="space-y-5">
+      <div>
+        <h1 className="text-2xl font-semibold">Produtos</h1>
+        <p className="text-sm text-muted-foreground mt-0.5">
+          Gerencie os produtos da plataforma.
+        </p>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-[380px_1fr] gap-6 items-start">
+        {/* Left — create form */}
         <GlassCard variant="solid" className="space-y-4">
           <h2 className="font-medium">Novo produto</h2>
           <form
@@ -145,6 +155,15 @@ export default function AdminProdutosPage() {
                 </p>
               )}
             </div>
+            <div className="space-y-1.5">
+              <Label>Descrição (opcional)</Label>
+              <textarea
+                {...createForm.register("description")}
+                placeholder="Descrição do produto"
+                rows={3}
+                className="flex w-full rounded-lg border border-input bg-transparent px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:border-ring focus:ring-3 focus:ring-ring/50"
+              />
+            </div>
             <Button
               type="submit"
               variant="primary"
@@ -155,10 +174,9 @@ export default function AdminProdutosPage() {
             </Button>
           </form>
         </GlassCard>
-      </div>
 
-      {/* Right — products table */}
-      <GlassCard variant="solid" className="space-y-4 h-fit">
+        {/* Right — products table */}
+        <GlassCard variant="solid" className="space-y-4 h-fit">
         <div className="flex items-center justify-between">
           <h2 className="font-semibold">Produtos cadastrados</h2>
           <span className="text-xs text-muted-foreground">
@@ -182,6 +200,9 @@ export default function AdminProdutosPage() {
                   <th className="text-left pb-2 font-medium text-muted-foreground text-xs">
                     Valor
                   </th>
+                  <th className="text-left pb-2 font-medium text-muted-foreground text-xs">
+                    Descrição
+                  </th>
                   <th className="pb-2" />
                 </tr>
               </thead>
@@ -194,6 +215,11 @@ export default function AdminProdutosPage() {
                     <td className="py-2.5 pr-4 font-medium">{p.name}</td>
                     <td className="py-2.5 pr-4 text-muted-foreground">
                       {formatBRL(p.value)}
+                    </td>
+                    <td className="py-2.5 pr-4 text-muted-foreground text-xs max-w-xs">
+                      <span className="line-clamp-2" title={p.description ?? undefined}>
+                        {p.description ?? "—"}
+                      </span>
                     </td>
                     <td className="py-2.5">
                       <div className="flex items-center gap-1 justify-end">
@@ -219,11 +245,12 @@ export default function AdminProdutosPage() {
             </table>
           </div>
         )}
-      </GlassCard>
+        </GlassCard>
+      </div>
 
       {/* Edit dialog */}
       <Dialog open={!!editing} onOpenChange={(o) => !o && setEditing(null)}>
-        <DialogContent className="glass max-w-sm" showCloseButton={false}>
+        <DialogContent className="max-w-sm" showCloseButton={false}>
           <DialogHeader>
             <DialogTitle>Editar produto</DialogTitle>
           </DialogHeader>
@@ -254,6 +281,14 @@ export default function AdminProdutosPage() {
                   {editForm.formState.errors.value.message}
                 </p>
               )}
+            </div>
+            <div className="space-y-1.5">
+              <Label>Descrição (opcional)</Label>
+              <textarea
+                {...editForm.register("description")}
+                rows={3}
+                className="flex w-full rounded-lg border border-input bg-transparent px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:border-ring focus:ring-3 focus:ring-ring/50"
+              />
             </div>
             <DialogFooter>
               <button

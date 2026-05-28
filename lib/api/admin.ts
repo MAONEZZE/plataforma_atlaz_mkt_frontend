@@ -55,7 +55,9 @@ export interface AulaInput {
   module_id: string;
   title: string;
   description?: string | null;
-  drive_url: string;
+  drive_url?: string;
+  document_url?: string;
+  is_doc: boolean;
   duration_minutes?: number | null;
 }
 
@@ -91,6 +93,12 @@ export const adminAulas = {
     api.patch(`/admin/lessons/${id}`, input),
   remove: (id: string) => api.delete(`/admin/lessons/${id}`),
   reordenar: (input: ReordenarInput) => api.post("/admin/lessons/reorder", input),
+  uploadDocument: async (file: File): Promise<string> => {
+    const fd = new FormData();
+    fd.append("document", file);
+    const { data } = await api.post<{ document_url: string }>("/admin/lessons/document", fd);
+    return data.document_url;
+  },
 };
 
 export interface ClienteInput {
@@ -158,12 +166,18 @@ export const adminStages = {
   },
 };
 
+export interface ProdutoInput {
+  name: string;
+  value: number;
+  description?: string | null;
+}
+
 export const adminProdutos = {
-  create: async (input: { name: string; value: number }): Promise<Produto> => {
+  create: async (input: ProdutoInput): Promise<Produto> => {
     const { data } = await api.post<Produto>("/admin/products", input);
     return data;
   },
-  update: async (id: string, input: { name: string; value: number }): Promise<Produto> => {
+  update: async (id: string, input: Partial<ProdutoInput>): Promise<Produto> => {
     const { data } = await api.patch<Produto>(`/admin/products/${id}`, input);
     return data;
   },

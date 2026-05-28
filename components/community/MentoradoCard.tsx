@@ -16,6 +16,7 @@ interface MentoradoPublico {
   linkedin_url: string | null;
   instagram_username: string | null;
   description?: string | null;
+  role?: "cliente" | "admin";
 }
 
 interface MentoradoCardProps {
@@ -101,7 +102,7 @@ function SocialLinks({
 
 export function MentoradoCard({ mentorado }: MentoradoCardProps) {
   const [open, setOpen] = useState(false);
-  const { name, photo_url, linkedin_url, instagram_username, description } = mentorado;
+  const { name, photo_url, linkedin_url, instagram_username, description, role } = mentorado;
 
   return (
     <>
@@ -118,7 +119,14 @@ export function MentoradoCard({ mentorado }: MentoradoCardProps) {
         </Avatar>
 
         <div className="space-y-1 min-h-[3rem] w-full">
-          <p className="font-semibold text-sm leading-tight">{name}</p>
+          <div className="flex flex-col items-center gap-1">
+            <p className="font-semibold text-sm leading-tight">{name}</p>
+            {role === "admin" && (
+              <span className="inline-flex items-center rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-semibold text-primary">
+                Equipe Atlaz
+              </span>
+            )}
+          </div>
           {description && (
             <p className="text-sm text-muted-foreground leading-snug font-medium line-clamp-3 [overflow-wrap:anywhere]">
               {description}
@@ -144,6 +152,11 @@ export function MentoradoCard({ mentorado }: MentoradoCardProps) {
                 </AvatarFallback>
               </Avatar>
               <DialogTitle className="text-base">{name}</DialogTitle>
+              {role === "admin" && (
+                <span className="inline-flex items-center rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-semibold text-primary">
+                  Equipe Atlaz
+                </span>
+              )}
             </div>
           </DialogHeader>
 

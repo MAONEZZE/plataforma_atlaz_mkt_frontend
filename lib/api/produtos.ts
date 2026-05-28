@@ -4,6 +4,7 @@ export interface Produto {
   id: string;
   name: string;
   value: number;
+  description: string | null;
   created_at: string;
 }
 

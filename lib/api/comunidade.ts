@@ -8,11 +8,13 @@ export interface MentoradoPublico {
   linkedin_url: string | null;
   instagram_username: string | null;
   description: string | null;
+  role?: "cliente" | "admin";
 }
 
 export async function listComunidade(params?: {
   page?: number;
   page_size?: number;
+  include_admins?: boolean;
 }): Promise<Paginated<MentoradoPublico>> {
   const { data } = await api.get<Paginated<MentoradoPublico>>("/community", { params });
   return data;

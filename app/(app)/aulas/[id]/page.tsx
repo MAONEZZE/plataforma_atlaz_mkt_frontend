@@ -3,7 +3,7 @@
 import { useParams } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
-import { CheckCircle2, Circle, Clock, Trophy, ArrowRight } from "lucide-react";
+import { CheckCircle2, Circle, Clock, Trophy, ArrowRight, FileText, Download } from "lucide-react";
 import { toast } from "sonner";
 import {
   getAula,
@@ -24,6 +24,38 @@ function nextAula(trilha: TrilhaDetalhe, currentAulaId: string) {
   const idx = all.findIndex((a) => a.id === currentAulaId);
   if (idx === -1 || idx >= all.length - 1) return null;
   return all[idx + 1];
+}
+
+function docFilename(url: string): string {
+  try {
+    const u = new URL(url);
+    const last = u.pathname.split("/").pop();
+    return last ? decodeURIComponent(last) : "documento";
+  } catch {
+    return "documento";
+  }
+}
+
+function DocumentCard({ url, title }: { url: string; title: string }) {
+  const name = docFilename(url);
+  return (
+    <div className="rounded-2xl border border-border bg-muted/30 p-8 flex flex-col items-center justify-center gap-4 text-center">
+      <FileText className="size-16 text-primary" />
+      <div className="space-y-1">
+        <p className="text-lg font-medium">{title}</p>
+        <p className="text-sm text-muted-foreground">{name}</p>
+      </div>
+      <a
+        href={url}
+        target="_blank"
+        rel="noopener noreferrer"
+        download
+        className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:brightness-110"
+      >
+        <Download className="size-4" /> Baixar documento
+      </a>
+    </div>
+  );
 }
 
 export default function AulaPage() {
@@ -97,8 +129,12 @@ export default function AulaPage() {
           </div>
         )}
 
-        {/* Player */}
-        <DriveVideoPlayer fileId={aula.drive_file_id} className="rounded-2xl overflow-hidden" />
+        {/* Player or document */}
+        {aula.is_doc && aula.document_url ? (
+          <DocumentCard url={aula.document_url} title={aula.title} />
+        ) : aula.drive_file_id ? (
+          <DriveVideoPlayer fileId={aula.drive_file_id} className="rounded-2xl overflow-hidden" />
+        ) : null}
 
         {/* Title + progress toggle */}
         <div className="space-y-3 flex justify-between">
@@ -112,7 +148,18 @@ export default function AulaPage() {
             )}
           </div>
 
-          <div className="space-y-1">
+          <div className="flex items-start gap-3">
+            {aula.is_doc && aula.document_url && (
+              <a
+                href={aula.document_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                download
+                className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-background px-3 py-1.5 text-xs font-medium hover:bg-accent"
+              >
+                <Download className="size-3.5" /> Baixar
+              </a>
+            )}
             {aula.completed ? (
               <div className="flex items-center gap-3">
                 <span className="flex items-center gap-1.5 text-sm font-medium text-success">
@@ -134,7 +181,6 @@ export default function AulaPage() {
                 Marcar como concluída
               </Button>
             )}
-            
           </div>
         </div>
 

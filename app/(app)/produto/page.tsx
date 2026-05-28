@@ -66,6 +66,11 @@ export default function ProdutoPage() {
                 )}
                 <p className="font-semibold text-base pr-20">{p.name}</p>
                 <p className="text-2xl font-bold">{formatBRL(p.value)}</p>
+                {p.description && (
+                  <p className="text-sm text-muted-foreground whitespace-pre-wrap">
+                    {p.description}
+                  </p>
+                )}
               </GlassCard>
             );
           })}

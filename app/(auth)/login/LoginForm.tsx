@@ -68,7 +68,7 @@ export function LoginForm({ inactiveReason }: LoginFormProps) {
   return (
     <div className="glass p-8 space-y-6">
       <div className="flex flex-col items-center gap-3">
-        <Image src="/logo.svg" alt="Atlaz" width={120} height={40} priority />
+        <Image src="/Atlaz.png" alt="Atlaz" width={48} height={48} priority className="rounded-lg" />
         <h1 className="text-xl font-semibold">Entrar</h1>
       </div>
 

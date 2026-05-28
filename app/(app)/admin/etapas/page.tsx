@@ -91,15 +91,16 @@ export default function AdminEtapasPage() {
   });
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-[380px_1fr] gap-6 items-start">
-      {/* Left — create form */}
-      <div className="space-y-5">
-        <div>
-          <h1 className="text-2xl font-semibold">Etapas</h1>
-          <p className="text-sm text-muted-foreground mt-0.5">
-            Gerencie as etapas da plataforma.
-          </p>
-        </div>
+    <div className="space-y-5">
+      <div>
+        <h1 className="text-2xl font-semibold">Etapas</h1>
+        <p className="text-sm text-muted-foreground mt-0.5">
+          Gerencie as etapas da plataforma.
+        </p>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-[380px_1fr] gap-6 items-start">
+        {/* Left — create form */}
         <GlassCard variant="solid" className="space-y-4">
           <h2 className="font-medium">Nova etapa</h2>
           <form
@@ -129,10 +130,9 @@ export default function AdminEtapasPage() {
             </Button>
           </form>
         </GlassCard>
-      </div>
 
-      {/* Right — stages list */}
-      <GlassCard variant="solid" className="space-y-4 h-fit">
+        {/* Right — stages list */}
+        <GlassCard variant="solid" className="space-y-4 h-fit">
         <div className="flex items-center justify-between">
           <h2 className="font-semibold">Etapas cadastradas</h2>
           <span className="text-xs text-muted-foreground">
@@ -173,11 +173,12 @@ export default function AdminEtapasPage() {
             ))}
           </div>
         )}
-      </GlassCard>
+        </GlassCard>
+      </div>
 
       {/* Edit dialog */}
       <Dialog open={!!editing} onOpenChange={(o) => !o && setEditing(null)}>
-        <DialogContent className="glass max-w-sm" showCloseButton={false}>
+        <DialogContent className="max-w-sm" showCloseButton={false}>
           <DialogHeader>
             <DialogTitle>Editar etapa</DialogTitle>
           </DialogHeader>
