@@ -176,12 +176,12 @@ function ClientManageModal({ client, onClose }: ClientManageModalProps) {
                         className="size-4 accent-[var(--color-primary)]"
                       />
                       <div className="min-w-0 flex-1">
-                        {s.stage_title && (
-                          <p className="text-sm font-medium break-all">{s.stage_title}</p>
+                        {s.title && (
+                          <p className="text-sm font-medium break-all">{s.title}</p>
                         )}
                         <p
                           className={
-                            (s.stage_title ? "text-xs text-muted-foreground" : "text-sm") +
+                            (s.title ? "text-xs text-muted-foreground" : "text-sm") +
                             " break-all whitespace-pre-wrap"
                           }
                         >

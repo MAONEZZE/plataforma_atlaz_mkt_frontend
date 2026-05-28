@@ -34,7 +34,7 @@ import {
 
 const stageSchema = z.object({
   text: z.string().min(1, "Texto obrigatório"),
-  stage_title: z.string().optional(),
+  title: z.string().optional(),
 });
 type StageFormInput = z.infer<typeof stageSchema>;
 
@@ -60,7 +60,7 @@ export default function AdminEtapasPage() {
 
   const createForm = useForm<StageFormInput>({
     resolver: zodResolver(stageSchema),
-    defaultValues: { text: "", stage_title: "" },
+    defaultValues: { text: "", title: "" },
   });
 
   const editForm = useForm<StageFormInput>({
@@ -68,14 +68,14 @@ export default function AdminEtapasPage() {
   });
 
   function openEdit(s: Stage) {
-    editForm.reset({ text: s.text, stage_title: s.stage_title ?? "" });
+    editForm.reset({ text: s.text, title: s.title ?? "" });
     setEditing(s);
   }
 
   function toPayload(d: StageFormInput) {
     return {
       text: d.text,
-      stage_title: d.stage_title?.trim() ? d.stage_title.trim() : null,
+      title: d.title?.trim() ? d.title.trim() : null,
     };
   }
 
@@ -83,7 +83,7 @@ export default function AdminEtapasPage() {
     mutationFn: (d: StageFormInput) => adminStages.create(toPayload(d)),
     onSuccess: () => {
       toast.success("Etapa criada!");
-      createForm.reset({ text: "", stage_title: "" });
+      createForm.reset({ text: "", title: "" });
       queryClient.invalidateQueries({ queryKey: ["admin", "stages"] });
     },
     onError: () => toast.error("Erro ao criar etapa."),
@@ -130,7 +130,7 @@ export default function AdminEtapasPage() {
             <div className="space-y-1.5">
               <Label>Título (opcional)</Label>
               <Input
-                {...createForm.register("stage_title")}
+                {...createForm.register("title")}
                 placeholder="Título da etapa"
               />
             </div>
@@ -177,7 +177,7 @@ export default function AdminEtapasPage() {
           <div className="space-y-2">
             {data?.map((s) => {
               const isOpen = expanded.has(s.id);
-              const label = s.stage_title?.trim() ? s.stage_title : s.text;
+              const label = s.title?.trim() ? s.title : s.text;
               return (
                 <div
                   key={s.id}
@@ -243,7 +243,7 @@ export default function AdminEtapasPage() {
           >
             <div className="space-y-1.5">
               <Label>Título (opcional)</Label>
-              <Input {...editForm.register("stage_title")} />
+              <Input {...editForm.register("title")} />
             </div>
             <div className="space-y-1.5">
               <Label>Texto</Label>

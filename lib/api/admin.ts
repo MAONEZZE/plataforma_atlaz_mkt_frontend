@@ -132,13 +132,13 @@ export const adminClientes = {
 export interface Stage {
   id: string;
   text: string;
-  stage_title: string | null;
+  title: string | null;
   created_at: string;
 }
 
 export interface StageInput {
   text: string;
-  stage_title?: string | null;
+  title?: string | null;
 }
 
 export const adminStages = {

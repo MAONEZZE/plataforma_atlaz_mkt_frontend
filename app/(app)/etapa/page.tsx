@@ -13,7 +13,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 interface StageWithText {
   stage_id: string;
   text: string;
-  stage_title: string | null;
+  title: string | null;
   done: boolean;
 }
 
@@ -39,7 +39,7 @@ export default function EtapaPage() {
       return {
         stage_id: s.stage_id,
         text: def?.text ?? "Etapa sem título",
-        stage_title: def?.stage_title ?? null,
+        title: def?.title ?? null,
         done: s.done,
       };
     });
@@ -128,20 +128,20 @@ export default function EtapaPage() {
                   className="mt-0.5 size-4 shrink-0 accent-[var(--color-primary)]"
                 />
                 <div className="min-w-0 flex-1">
-                  {stage.stage_title && (
+                  {stage.title && (
                     <p
                       className={cn(
                         "text-sm font-medium leading-snug break-all",
                         stage.done && "line-through text-muted-foreground",
                       )}
                     >
-                      {stage.stage_title}
+                      {stage.title}
                     </p>
                   )}
                   <p
                     className={cn(
                       "leading-snug break-all whitespace-pre-wrap",
-                      stage.stage_title ? "text-xs text-muted-foreground" : "text-sm",
+                      stage.title ? "text-xs text-muted-foreground" : "text-sm",
                       stage.done && "line-through text-muted-foreground",
                     )}
                   >
