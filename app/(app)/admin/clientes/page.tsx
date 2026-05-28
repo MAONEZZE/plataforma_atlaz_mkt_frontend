@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -11,7 +11,10 @@ import "react-phone-number-input/style.css";
 import { format, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { cadastroClienteSchema, type CadastroClienteInput } from "@/lib/utils/validations";
-import { adminClientes } from "@/lib/api/admin";
+import { adminClientes, adminStages, adminProdutos } from "@/lib/api/admin";
+import type { ClienteLinha } from "@/lib/api/admin";
+import { listProdutos } from "@/lib/api/produtos";
+import type { UserStage } from "@/lib/api/etapas";
 import { GlassCard } from "@/components/glass/GlassCard";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,6 +22,12 @@ import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { PasswordInput } from "@/components/forms/PasswordInput";
 import { PasswordStrengthIndicator } from "@/components/forms/PasswordStrengthIndicator";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 const PAGE_SIZE = 20;
 
@@ -27,8 +36,173 @@ function formatPhone(phone: string | null): string {
   return phone.startsWith("+") ? phone : `+${phone}`;
 }
 
+interface ClientManageModalProps {
+  client: ClienteLinha;
+  onClose: () => void;
+}
+
+function ClientManageModal({ client, onClose }: ClientManageModalProps) {
+  const queryClient = useQueryClient();
+
+  const { data: produtos } = useQuery({
+    queryKey: ["produtos"],
+    queryFn: listProdutos,
+  });
+
+  const { data: allStages } = useQuery({
+    queryKey: ["admin", "stages"],
+    queryFn: adminStages.list,
+  });
+
+  const { data: clientStages } = useQuery({
+    queryKey: ["admin", "clients", client.id, "stages"],
+    queryFn: () => adminStages.getClientStages(client.id),
+    retry: false,
+  });
+
+  const [attachedIds, setAttachedIds] = useState<Set<string>>(new Set());
+  const [selectedProductId, setSelectedProductId] = useState<string>(
+    client.product_id ?? "",
+  );
+
+  useEffect(() => {
+    if (clientStages) {
+      setAttachedIds(new Set(clientStages.map((s) => s.stage_id)));
+    }
+  }, [clientStages]);
+
+  const productMut = useMutation({
+    mutationFn: () =>
+      adminProdutos.assignToClient(client.id, selectedProductId),
+    onSuccess: () => {
+      toast.success("Produto atribuído!");
+      queryClient.invalidateQueries({ queryKey: ["admin", "clientes"] });
+    },
+    onError: () => toast.error("Erro ao atribuir produto."),
+  });
+
+  const stageMut = useMutation({
+    mutationFn: async ({
+      stage_id,
+      attach,
+    }: {
+      stage_id: string;
+      attach: boolean;
+    }) => {
+      if (attach) {
+        await adminStages.attachToClient(client.id, stage_id);
+      } else {
+        await adminStages.detachFromClient(client.id, stage_id);
+      }
+      return { stage_id, attach };
+    },
+    onSuccess: ({ stage_id, attach }) => {
+      setAttachedIds((prev) => {
+        const next = new Set(prev);
+        if (attach) next.add(stage_id);
+        else next.delete(stage_id);
+        return next;
+      });
+      toast.success(attach ? "Etapa adicionada." : "Etapa removida.");
+      queryClient.invalidateQueries({
+        queryKey: ["admin", "clients", client.id, "stages"],
+      });
+    },
+    onError: () => toast.error("Erro ao alterar etapa."),
+  });
+
+  return (
+    <Dialog open onOpenChange={(o) => !o && onClose()}>
+      <DialogContent className="glass max-w-md" showCloseButton={false}>
+        <DialogHeader>
+          <DialogTitle>Gerenciar — {client.name}</DialogTitle>
+        </DialogHeader>
+
+        <div className="space-y-6">
+          {/* Product section */}
+          <div className="space-y-3">
+            <h3 className="text-sm font-medium">Produto</h3>
+            <div className="flex gap-2">
+              <select
+                value={selectedProductId}
+                onChange={(e) => setSelectedProductId(e.target.value)}
+                className="flex-1 h-9 rounded-lg border border-input bg-transparent px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring/50"
+              >
+                <option value="">Sem produto</option>
+                {produtos?.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.name}
+                  </option>
+                ))}
+              </select>
+              <Button
+                variant="primary"
+                size="sm"
+                disabled={!selectedProductId || productMut.isPending}
+                onClick={() => productMut.mutate()}
+              >
+                {productMut.isPending ? "..." : "Salvar"}
+              </Button>
+            </div>
+          </div>
+
+          {/* Stages section */}
+          <div className="space-y-3">
+            <h3 className="text-sm font-medium">Etapas</h3>
+            {!allStages ? (
+              <Skeleton className="h-24 rounded-xl" />
+            ) : allStages.length === 0 ? (
+              <p className="text-xs text-muted-foreground">
+                Nenhuma etapa cadastrada.
+              </p>
+            ) : (
+              <div className="space-y-1.5 max-h-60 overflow-y-auto pr-1">
+                {allStages.map((s) => {
+                  const attached = attachedIds.has(s.id);
+                  return (
+                    <label
+                      key={s.id}
+                      className="flex items-center gap-2.5 rounded-lg px-2 py-2 hover:bg-muted/40 cursor-pointer transition-colors"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={attached}
+                        disabled={stageMut.isPending}
+                        onChange={(e) =>
+                          stageMut.mutate({
+                            stage_id: s.id,
+                            attach: e.target.checked,
+                          })
+                        }
+                        className="size-4 accent-[var(--color-primary)]"
+                      />
+                      <span className="text-sm">{s.text}</span>
+                    </label>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
+          {/* Close button */}
+          <div className="flex justify-end pt-1">
+            <button
+              type="button"
+              onClick={onClose}
+              className="text-sm text-muted-foreground hover:text-foreground transition-colors px-3 py-2"
+            >
+              Fechar
+            </button>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 function ClientesTable() {
   const [page, setPage] = useState(1);
+  const [managing, setManaging] = useState<ClienteLinha | null>(null);
   const { data, isLoading, isError } = useQuery({
     queryKey: ["admin", "clientes", page],
     queryFn: () => adminClientes.list({ page, page_size: PAGE_SIZE }),
@@ -81,6 +255,15 @@ function ClientesTable() {
                     </td>
                   )}
                   <td className="py-2.5 pr-4 text-muted-foreground text-xs">{c.product_name ?? "—"}</td>
+                  <td className="py-2.5">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => setManaging(c)}
+                    >
+                      Gerenciar
+                    </Button>
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -108,6 +291,13 @@ function ClientesTable() {
             Próximo
           </button>
         </div>
+      )}
+
+      {managing && (
+        <ClientManageModal
+          client={managing}
+          onClose={() => setManaging(null)}
+        />
       )}
     </GlassCard>
   );
