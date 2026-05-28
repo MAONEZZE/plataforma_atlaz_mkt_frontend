@@ -64,10 +64,10 @@ export default function ProdutoPage() {
                     Seu plano
                   </Badge>
                 )}
-                <p className="font-semibold text-base pr-20">{p.name}</p>
+                <p className="font-semibold text-base pr-20 break-all">{p.name}</p>
                 <p className="text-2xl font-bold">{formatBRL(p.value)}</p>
                 {p.description && (
-                  <p className="text-sm text-muted-foreground whitespace-pre-wrap">
+                  <p className="text-sm text-muted-foreground whitespace-pre-wrap break-all">
                     {p.description}
                   </p>
                 )}

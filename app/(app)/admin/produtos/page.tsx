@@ -119,7 +119,7 @@ export default function AdminProdutosPage() {
         </p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-[380px_1fr] gap-6 items-start">
+      <div className="grid grid-cols-1 lg:grid-cols-[380px_minmax(0,1fr)] gap-6 items-start">
         {/* Left — create form */}
         <GlassCard variant="solid" className="space-y-4">
           <h2 className="font-medium">Novo produto</h2>
@@ -191,7 +191,13 @@ export default function AdminProdutosPage() {
           </p>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-sm">
+            <table className="w-full text-sm table-fixed">
+              <colgroup>
+                <col className="w-[28%]" />
+                <col className="w-[18%]" />
+                <col className="w-[42%]" />
+                <col className="w-[12%]" />
+              </colgroup>
               <thead>
                 <tr className="border-b border-border">
                   <th className="text-left pb-2 font-medium text-muted-foreground text-xs">
@@ -212,12 +218,12 @@ export default function AdminProdutosPage() {
                     key={p.id}
                     className="border-b border-border/50 last:border-0"
                   >
-                    <td className="py-2.5 pr-4 font-medium">{p.name}</td>
+                    <td className="py-2.5 pr-4 font-medium break-all">{p.name}</td>
                     <td className="py-2.5 pr-4 text-muted-foreground">
                       {formatBRL(p.value)}
                     </td>
-                    <td className="py-2.5 pr-4 text-muted-foreground text-xs max-w-xs">
-                      <span className="line-clamp-2" title={p.description ?? undefined}>
+                    <td className="py-2.5 pr-4 text-muted-foreground text-xs">
+                      <span className="line-clamp-2 break-all" title={p.description ?? undefined}>
                         {p.description ?? "—"}
                       </span>
                     </td>

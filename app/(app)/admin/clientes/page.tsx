@@ -175,7 +175,19 @@ function ClientManageModal({ client, onClose }: ClientManageModalProps) {
                         }
                         className="size-4 accent-[var(--color-primary)]"
                       />
-                      <span className="text-sm">{s.text}</span>
+                      <div className="min-w-0 flex-1">
+                        {s.stage_title && (
+                          <p className="text-sm font-medium break-all">{s.stage_title}</p>
+                        )}
+                        <p
+                          className={
+                            (s.stage_title ? "text-xs text-muted-foreground" : "text-sm") +
+                            " break-all whitespace-pre-wrap"
+                          }
+                        >
+                          {s.text}
+                        </p>
+                      </div>
                     </label>
                   );
                 })}
@@ -229,7 +241,7 @@ function ClientesTable() {
         <p className="text-sm text-muted-foreground text-center py-8">Nenhum cliente ainda.</p>
       ) : (
         <div className="overflow-x-auto">
-          <table className="w-full text-sm">
+          <table className="w-full text-sm table-fixed">
             <thead>
               <tr className="border-b border-border">
                 <th className="text-left pb-2 font-medium text-muted-foreground text-xs">Nome</th>
@@ -245,15 +257,15 @@ function ClientesTable() {
             <tbody>
               {items.map((c) => (
                 <tr key={c.id} className="border-b border-border/50 last:border-0">
-                  <td className="py-2.5 pr-4 font-medium">{c.name}</td>
-                  <td className="py-2.5 pr-4 text-muted-foreground">{c.email}</td>
-                  <td className="py-2.5 pr-4 text-muted-foreground">{formatPhone(c.phone)}</td>
+                  <td className="py-2.5 pr-4 font-medium break-all">{c.name}</td>
+                  <td className="py-2.5 pr-4 text-muted-foreground break-all">{c.email}</td>
+                  <td className="py-2.5 pr-4 text-muted-foreground break-all">{formatPhone(c.phone)}</td>
                   {c.created_at && (
                     <td className="py-2.5 text-muted-foreground text-xs">
                       {format(parseISO(c.created_at), "dd/MM/yyyy", { locale: ptBR })}
                     </td>
                   )}
-                  <td className="py-2.5 pr-4 text-muted-foreground text-xs">{c.product_name ?? "—"}</td>
+                  <td className="py-2.5 pr-4 text-muted-foreground text-xs break-all">{c.product_name ?? "—"}</td>
                   <td className="py-2.5">
                     <Button
                       size="sm"
@@ -344,7 +356,7 @@ export default function CadastrarClientePage() {
         </p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-[380px_1fr] gap-6 items-start">
+      <div className="grid grid-cols-1 lg:grid-cols-[380px_minmax(0,1fr)] gap-6 items-start">
         {/* Left — form */}
         <GlassCard variant="solid" className="space-y-4">
           <form

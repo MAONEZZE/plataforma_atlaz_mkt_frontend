@@ -132,7 +132,13 @@ export const adminClientes = {
 export interface Stage {
   id: string;
   text: string;
+  stage_title: string | null;
   created_at: string;
+}
+
+export interface StageInput {
+  text: string;
+  stage_title?: string | null;
 }
 
 export const adminStages = {
@@ -140,12 +146,12 @@ export const adminStages = {
     const { data } = await api.get<Stage[]>("/admin/stages");
     return data;
   },
-  create: async (text: string): Promise<Stage> => {
-    const { data } = await api.post<Stage>("/admin/stages", { text });
+  create: async (input: StageInput): Promise<Stage> => {
+    const { data } = await api.post<Stage>("/admin/stages", input);
     return data;
   },
-  update: async (id: string, text: string): Promise<Stage> => {
-    const { data } = await api.patch<Stage>(`/admin/stages/${id}`, { text });
+  update: async (id: string, input: Partial<StageInput>): Promise<Stage> => {
+    const { data } = await api.patch<Stage>(`/admin/stages/${id}`, input);
     return data;
   },
   remove: async (id: string): Promise<void> => {

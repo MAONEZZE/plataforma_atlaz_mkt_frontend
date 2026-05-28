@@ -6,7 +6,8 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { toast } from "sonner";
-import { Pencil, Trash2 } from "lucide-react";
+import { Pencil, Trash2, ChevronDown } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { adminStages, type Stage } from "@/lib/api/admin";
 import { GlassCard } from "@/components/glass/GlassCard";
 import { Button } from "@/components/ui/button";
@@ -33,8 +34,9 @@ import {
 
 const stageSchema = z.object({
   text: z.string().min(1, "Texto obrigatório"),
+  stage_title: z.string().optional(),
 });
-type StageInput = z.infer<typeof stageSchema>;
+type StageFormInput = z.infer<typeof stageSchema>;
 
 export default function AdminEtapasPage() {
   const queryClient = useQueryClient();
@@ -45,33 +47,50 @@ export default function AdminEtapasPage() {
 
   const [editing, setEditing] = useState<Stage | null>(null);
   const [deleting, setDeleting] = useState<Stage | null>(null);
+  const [expanded, setExpanded] = useState<Set<string>>(new Set());
 
-  const createForm = useForm<StageInput>({
+  function toggleExpand(id: string) {
+    setExpanded((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  const createForm = useForm<StageFormInput>({
     resolver: zodResolver(stageSchema),
-    defaultValues: { text: "" },
+    defaultValues: { text: "", stage_title: "" },
   });
 
-  const editForm = useForm<StageInput>({
+  const editForm = useForm<StageFormInput>({
     resolver: zodResolver(stageSchema),
   });
 
   function openEdit(s: Stage) {
-    editForm.reset({ text: s.text });
+    editForm.reset({ text: s.text, stage_title: s.stage_title ?? "" });
     setEditing(s);
   }
 
+  function toPayload(d: StageFormInput) {
+    return {
+      text: d.text,
+      stage_title: d.stage_title?.trim() ? d.stage_title.trim() : null,
+    };
+  }
+
   const createMut = useMutation({
-    mutationFn: (d: StageInput) => adminStages.create(d.text),
+    mutationFn: (d: StageFormInput) => adminStages.create(toPayload(d)),
     onSuccess: () => {
       toast.success("Etapa criada!");
-      createForm.reset({ text: "" });
+      createForm.reset({ text: "", stage_title: "" });
       queryClient.invalidateQueries({ queryKey: ["admin", "stages"] });
     },
     onError: () => toast.error("Erro ao criar etapa."),
   });
 
   const editMut = useMutation({
-    mutationFn: (d: StageInput) => adminStages.update(editing!.id, d.text),
+    mutationFn: (d: StageFormInput) => adminStages.update(editing!.id, toPayload(d)),
     onSuccess: () => {
       toast.success("Etapa atualizada!");
       setEditing(null);
@@ -99,7 +118,7 @@ export default function AdminEtapasPage() {
         </p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-[380px_1fr] gap-6 items-start">
+      <div className="grid grid-cols-1 lg:grid-cols-[380px_minmax(0,1fr)] gap-6 items-start">
         {/* Left — create form */}
         <GlassCard variant="solid" className="space-y-4">
           <h2 className="font-medium">Nova etapa</h2>
@@ -109,10 +128,19 @@ export default function AdminEtapasPage() {
             noValidate
           >
             <div className="space-y-1.5">
-              <Label>Texto</Label>
+              <Label>Título (opcional)</Label>
               <Input
+                {...createForm.register("stage_title")}
+                placeholder="Título da etapa"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Texto</Label>
+              <textarea
                 {...createForm.register("text")}
                 placeholder="Descreva a etapa..."
+                rows={5}
+                className="flex w-full rounded-lg border border-input bg-transparent px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:border-ring focus:ring-3 focus:ring-ring/50"
               />
               {createForm.formState.errors.text && (
                 <p className="text-xs text-danger">
@@ -147,30 +175,56 @@ export default function AdminEtapasPage() {
           </p>
         ) : (
           <div className="space-y-2">
-            {data?.map((s) => (
-              <div
-                key={s.id}
-                className="flex items-center justify-between rounded-lg border border-border/60 px-3 py-2.5 hover:bg-muted/30 transition-colors"
-              >
-                <span className="text-sm">{s.text}</span>
-                <div className="flex items-center gap-1 shrink-0 ml-3">
-                  <button
-                    type="button"
-                    onClick={() => openEdit(s)}
-                    className="p-1.5 rounded-lg hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
-                  >
-                    <Pencil className="size-3.5" />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setDeleting(s)}
-                    className="p-1.5 rounded-lg hover:bg-danger/10 transition-colors text-muted-foreground hover:text-danger"
-                  >
-                    <Trash2 className="size-3.5" />
-                  </button>
+            {data?.map((s) => {
+              const isOpen = expanded.has(s.id);
+              const label = s.stage_title?.trim() ? s.stage_title : s.text;
+              return (
+                <div
+                  key={s.id}
+                  className="rounded-lg border border-border/60 hover:bg-muted/30 transition-colors"
+                >
+                  <div className="flex items-center justify-between gap-2 px-3 py-2.5">
+                    <button
+                      type="button"
+                      onClick={() => toggleExpand(s.id)}
+                      aria-expanded={isOpen}
+                      className="flex items-center gap-2 min-w-0 flex-1 text-left cursor-pointer"
+                    >
+                      <ChevronDown
+                        className={cn(
+                          "size-3.5 shrink-0 text-muted-foreground transition-transform",
+                          isOpen && "rotate-180",
+                        )}
+                      />
+                      <span className="text-sm font-medium truncate min-w-0">{label}</span>
+                    </button>
+                    <div className="flex items-center gap-1 shrink-0">
+                      <button
+                        type="button"
+                        onClick={() => openEdit(s)}
+                        className="p-1.5 rounded-lg hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
+                      >
+                        <Pencil className="size-3.5" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setDeleting(s)}
+                        className="p-1.5 rounded-lg hover:bg-danger/10 transition-colors text-muted-foreground hover:text-danger"
+                      >
+                        <Trash2 className="size-3.5" />
+                      </button>
+                    </div>
+                  </div>
+                  {isOpen && (
+                    <div className="px-3 pb-3 pt-0 border-t border-border/40">
+                      <p className="text-sm text-muted-foreground whitespace-pre-wrap break-all pt-2">
+                        {s.text}
+                      </p>
+                    </div>
+                  )}
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
         </GlassCard>
@@ -188,8 +242,16 @@ export default function AdminEtapasPage() {
             noValidate
           >
             <div className="space-y-1.5">
+              <Label>Título (opcional)</Label>
+              <Input {...editForm.register("stage_title")} />
+            </div>
+            <div className="space-y-1.5">
               <Label>Texto</Label>
-              <Input {...editForm.register("text")} />
+              <textarea
+                {...editForm.register("text")}
+                rows={5}
+                className="flex w-full rounded-lg border border-input bg-transparent px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:border-ring focus:ring-3 focus:ring-ring/50"
+              />
               {editForm.formState.errors.text && (
                 <p className="text-xs text-danger">
                   {editForm.formState.errors.text.message}
