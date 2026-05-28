@@ -120,3 +120,57 @@ export const adminClientes = {
     return data;
   },
 };
+
+export interface Stage {
+  id: string;
+  text: string;
+  created_at: string;
+}
+
+export const adminStages = {
+  list: async (): Promise<Stage[]> => {
+    const { data } = await api.get<Stage[]>("/admin/stages");
+    return data;
+  },
+  create: async (text: string): Promise<Stage> => {
+    const { data } = await api.post<Stage>("/admin/stages", { text });
+    return data;
+  },
+  update: async (id: string, text: string): Promise<Stage> => {
+    const { data } = await api.patch<Stage>(`/admin/stages/${id}`, { text });
+    return data;
+  },
+  remove: async (id: string): Promise<void> => {
+    await api.delete(`/admin/stages/${id}`);
+  },
+  attachToClient: async (user_id: string, stage_id: string): Promise<UserStage> => {
+    const { data } = await api.post<UserStage>(
+      `/admin/clients/${user_id}/stages/${stage_id}`,
+    );
+    return data;
+  },
+  detachFromClient: async (user_id: string, stage_id: string): Promise<void> => {
+    await api.delete(`/admin/clients/${user_id}/stages/${stage_id}`);
+  },
+  getClientStages: async (user_id: string): Promise<UserStage[]> => {
+    const { data } = await api.get<UserStage[]>(`/admin/clients/${user_id}/stages`);
+    return data;
+  },
+};
+
+export const adminProdutos = {
+  create: async (input: { name: string; value: number }): Promise<Produto> => {
+    const { data } = await api.post<Produto>("/admin/products", input);
+    return data;
+  },
+  update: async (id: string, input: { name: string; value: number }): Promise<Produto> => {
+    const { data } = await api.patch<Produto>(`/admin/products/${id}`, input);
+    return data;
+  },
+  remove: async (id: string): Promise<void> => {
+    await api.delete(`/admin/products/${id}`);
+  },
+  assignToClient: async (user_id: string, product_id: string): Promise<void> => {
+    await api.patch(`/admin/clients/${user_id}/product`, { product_id });
+  },
+};
