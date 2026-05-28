@@ -17,10 +17,10 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { getDashboardSeries } from "@/lib/api/metricas";
 
 const SERIES = [
-  { key: "calls_scheduled", label: "Lig. Agendadas", color: "var(--chart-1)" },
+  { key: "calls_scheduled", label: "Reun. Realizadas", color: "var(--chart-1)" },
   { key: "calls_made", label: "Lig. Realizadas", color: "var(--chart-2)" },
-  { key: "meetings_scheduled", label: "Reuniões", color: "var(--chart-3)" },
-  { key: "referrals", label: "Indicações", color: "var(--chart-4)" },
+  { key: "meetings_scheduled", label: "Vendas", color: "var(--chart-3)" },
+  { key: "referrals", label: "Indicações", color: "#3B82F6" },
 ] as const;
 
 export function DashboardChart() {

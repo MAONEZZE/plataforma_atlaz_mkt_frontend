@@ -11,6 +11,8 @@ import { DataTable } from "@/components/data/DataTable";
 import { EmptyState } from "@/components/data/EmptyState";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { MetricasForm } from "@/components/forms/MetricasForm";
 import { listMetricas, type MetricaSemanal } from "@/lib/api/metricas";
 
 const PAGE_SIZE = 10;
@@ -33,6 +35,7 @@ function isEditable(semanaInicio: string | undefined | null): boolean {
 
 export function DashboardTable() {
   const [page, setPage] = useState(1);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const router = useRouter();
 
   const { data, isLoading, isError, refetch } = useQuery({
@@ -46,9 +49,9 @@ export function DashboardTable() {
       header: "Semana",
       cell: ({ row }) => weekLabel(row.original.week_start),
     },
-    { accessorKey: "calls_scheduled", header: "Lig. Agendadas" },
+    { accessorKey: "calls_scheduled", header: "Reun. Realizadas" },
     { accessorKey: "calls_made", header: "Lig. Realizadas" },
-    { accessorKey: "meetings_scheduled", header: "Reuniões" },
+    { accessorKey: "meetings_scheduled", header: "Vendas" },
     { accessorKey: "referrals", header: "Indicações" },
     {
       id: "acoes",
@@ -59,7 +62,7 @@ export function DashboardTable() {
           <Button
             size="sm"
             variant="outline"
-            onClick={() => router.push(`/metricas/${row.original.id}/editar`)}
+            onClick={() => setEditingId(row.original.id)}
           >
             Editar
           </Button>
@@ -89,24 +92,37 @@ export function DashboardTable() {
   }
 
   return (
-    <GlassCard variant="solid" className="space-y-4">
-      <h2 className="font-semibold">Histórico de métricas</h2>
-      <DataTable
-        data={data?.items ?? []}
-        columns={columns}
-        isLoading={isLoading}
-        emptyState={
-          <EmptyState
-            title="Você ainda não cadastrou métricas."
-            action={{ label: "Cadastrar primeira métrica", onClick: () => router.push("/metricas/nova") }}
+    <>
+      <GlassCard variant="solid" className="space-y-4">
+        <h2 className="font-semibold">Histórico de métricas</h2>
+        <DataTable
+          data={data?.items ?? []}
+          columns={columns}
+          isLoading={isLoading}
+          emptyState={
+            <EmptyState
+              title="Você ainda não cadastrou métricas."
+              action={{ label: "Cadastrar primeira métrica", onClick: () => router.push("/metricas/nova") }}
+            />
+          }
+          pagination={
+            data
+              ? { page, pageSize: PAGE_SIZE, total: data.total, onChange: setPage }
+              : undefined
+          }
+        />
+      </GlassCard>
+
+      <Dialog open={!!editingId} onOpenChange={(o) => !o && setEditingId(null)}>
+        <DialogContent className="glass max-w-lg" showCloseButton={false}>
+          <MetricasForm
+            mode="edit"
+            metricaId={editingId ?? undefined}
+            onSuccess={() => setEditingId(null)}
+            onCancel={() => setEditingId(null)}
           />
-        }
-        pagination={
-          data
-            ? { page, pageSize: PAGE_SIZE, total: data.total, onChange: setPage }
-            : undefined
-        }
-      />
-    </GlassCard>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }

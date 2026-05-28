@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { startOfWeek, subDays } from "date-fns";
 import axios from "axios";
@@ -40,14 +40,15 @@ interface MetricasFormProps {
 }
 
 const NUMERIC_FIELDS = [
-  { name: "calls_scheduled" as const, label: "Ligações Agendadas" },
+  { name: "calls_scheduled" as const, label: "Reuniões Realizadas" },
   { name: "calls_made" as const, label: "Ligações Realizadas" },
-  { name: "meetings_scheduled" as const, label: "Reuniões Agendadas" },
+  { name: "meetings_scheduled" as const, label: "Vendas" },
   { name: "referrals" as const, label: "Indicações" },
 ];
 
 export function MetricasForm({ mode, metricaId, onSuccess, onCancel }: MetricasFormProps) {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const [cancelConfirm, setCancelConfirm] = useState(false);
 
   const today = new Date();
@@ -109,6 +110,8 @@ export function MetricasForm({ mode, metricaId, onSuccess, onCancel }: MetricasF
     },
     onSuccess: () => {
       toast.success("Métricas salvas!");
+      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+      queryClient.invalidateQueries({ queryKey: ["metricas"] });
       if (onSuccess) {
         onSuccess();
       } else {
@@ -230,7 +233,7 @@ export function MetricasForm({ mode, metricaId, onSuccess, onCancel }: MetricasF
       </GlassCard>
 
       <AlertDialog open={cancelConfirm} onOpenChange={setCancelConfirm}>
-        <AlertDialogContent className="glass">
+        <AlertDialogContent className="bg-card">
           <AlertDialogHeader>
             <AlertDialogTitle>Descartar alterações?</AlertDialogTitle>
             <AlertDialogDescription>
