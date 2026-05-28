@@ -13,13 +13,17 @@ import { cn } from "@/lib/utils";
 const clientLinks = [
   { href: "/dashboard", label: "Dashboard" },
   { href: "/trilhas", label: "Trilhas" },
+  { href: "/produto", label: "Produto" },
+  { href: "/etapa", label: "Etapas" },
   { href: "/comunidade", label: "Comunidade" },
 ];
 
 const adminLinks = [
   { href: "/admin/dashboard", label: "Dashboard" },
-  { href: "/admin/trilhas", label: "Gerenciar Trilhas" },
-  { href: "/trilhas", label: "Trilhas" },
+  { href: "/admin/clientes", label: "Clientes" },
+  { href: "/admin/trilhas", label: "Trilhas" },
+  { href: "/admin/produtos", label: "Produtos" },
+  { href: "/admin/etapas", label: "Etapas" },
   { href: "/comunidade", label: "Comunidade" },
 ];
 
@@ -91,7 +95,7 @@ export function Navbar() {
       <div className="mx-auto flex h-14 max-w-7xl items-center justify-between gap-4 px-4 sm:px-6">
         {/* Logo */}
         <Link href="/dashboard" className="shrink-0">
-          <Image src="/logo.svg" alt="Atlaz" width={90} height={32} priority />
+          <Image src="/Atlaz.png" alt="Atlaz" width={32} height={32} priority className="rounded-lg" />
         </Link>
 
         {/* Desktop links */}
