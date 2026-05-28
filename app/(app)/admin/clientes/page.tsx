@@ -14,7 +14,6 @@ import { cadastroClienteSchema, type CadastroClienteInput } from "@/lib/utils/va
 import { adminClientes, adminStages, adminProdutos } from "@/lib/api/admin";
 import type { ClienteLinha } from "@/lib/api/admin";
 import { listProdutos } from "@/lib/api/produtos";
-import type { UserStage } from "@/lib/api/etapas";
 import { GlassCard } from "@/components/glass/GlassCard";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
