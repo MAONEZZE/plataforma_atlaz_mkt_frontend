@@ -1,5 +1,7 @@
 import { api } from "./client";
 import type { Paginated } from "./types";
+import type { UserStage } from "./etapas";
+import type { Produto } from "./produtos";
 
 export interface AdminDashboardLinha {
   user_id: string;
@@ -10,6 +12,8 @@ export interface AdminDashboardLinha {
   meetings_scheduled: number;
   referrals: number;
   last_metric_at: string | null;
+  product_name?: string | null;
+  product_id?: string | null;
 }
 
 export interface AdminAgregados {
@@ -87,4 +91,32 @@ export const adminAulas = {
     api.patch(`/admin/lessons/${id}`, input),
   remove: (id: string) => api.delete(`/admin/lessons/${id}`),
   reordenar: (input: ReordenarInput) => api.post("/admin/lessons/reorder", input),
+};
+
+export interface ClienteInput {
+  name: string;
+  email: string;
+  password: string;
+  phone: string;
+}
+
+export interface ClienteLinha {
+  id: string;
+  name: string;
+  email: string;
+  phone: string | null;
+  created_at?: string;
+  product_name?: string | null;
+  product_id?: string | null;
+}
+
+export const adminClientes = {
+  create: async (input: ClienteInput) => {
+    const { data } = await api.post("/admin/clients", input);
+    return data;
+  },
+  list: async (params?: { page?: number; page_size?: number; busca?: string }): Promise<Paginated<ClienteLinha>> => {
+    const { data } = await api.get<Paginated<ClienteLinha>>("/admin/clients", { params });
+    return data;
+  },
 };

@@ -51,6 +51,13 @@ export default function AdminDashboardPage() {
     { accessorKey: "meetings_scheduled", header: "Vendas" },
     { accessorKey: "referrals", header: "Indicações" },
     {
+      id: "produto",
+      header: "Produto",
+      cell: ({ row }) => (
+        <span className="text-xs text-muted-foreground">{row.original.product_name ?? "—"}</span>
+      ),
+    },
+    {
       id: "ultima",
       header: "Última métrica",
       cell: ({ row }) =>

@@ -10,6 +10,8 @@ export interface Usuario {
   description: string | null;
   photo_url: string | null;
   role: Role;
+  product_name?: string | null;
+  product_id?: string | null;
 }
 
 export interface Paginated<T> {
