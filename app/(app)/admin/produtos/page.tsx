@@ -6,6 +6,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { toast } from "sonner";
+import axios from "axios";
 import { Pencil, Trash2 } from "lucide-react";
 import { listProdutos, type Produto } from "@/lib/api/produtos";
 import { adminProdutos } from "@/lib/api/admin";
@@ -107,7 +108,16 @@ export default function AdminProdutosPage() {
       setDeleting(null);
       queryClient.invalidateQueries({ queryKey: ["produtos"] });
     },
-    onError: () => toast.error("Erro ao remover produto."),
+    onError: (err) => {
+      if (
+        axios.isAxiosError(err) &&
+        err.response?.data?.error?.code === "PRODUCT_IN_USE"
+      ) {
+        toast.error("Produto está vinculado a clientes e não pode ser removido.");
+      } else {
+        toast.error("Erro ao remover produto.");
+      }
+    },
   });
 
   return (

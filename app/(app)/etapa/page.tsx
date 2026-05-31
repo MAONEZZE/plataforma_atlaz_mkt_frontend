@@ -5,14 +5,13 @@ import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { getMyStages, updateMyStage } from "@/lib/api/etapas";
-import { adminStages } from "@/lib/api/admin";
 import { GlassCard } from "@/components/glass/GlassCard";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 
 interface StageWithText {
   stage_id: string;
-  text: string;
+  text: string | null;
   title: string | null;
   done: boolean;
 }
@@ -22,34 +21,27 @@ export default function EtapaPage() {
   const [originalDone, setOriginalDone] = useState<Record<string, boolean>>({});
   const [saving, setSaving] = useState(false);
 
-  const { data: myStages, isLoading: loadingMine } = useQuery({
+  const { data: myStages, isLoading } = useQuery({
     queryKey: ["stages", "me"],
     queryFn: getMyStages,
   });
 
-  const { data: allStages, isLoading: loadingAll } = useQuery({
-    queryKey: ["admin", "stages"],
-    queryFn: adminStages.list,
-  });
-
   useEffect(() => {
-    if (!myStages || !allStages) return;
-    const merged: StageWithText[] = myStages.map((s) => {
-      const def = allStages.find((a) => a.id === s.stage_id);
-      return {
+    if (!myStages) return;
+    setLocalStages(
+      myStages.map((s) => ({
         stage_id: s.stage_id,
-        text: def?.text ?? "Etapa sem título",
-        title: def?.title ?? null,
+        text: s.text,
+        title: s.title,
         done: s.done,
-      };
-    });
-    setLocalStages(merged);
+      })),
+    );
     const original: Record<string, boolean> = {};
     myStages.forEach((s) => {
       original[s.stage_id] = s.done;
     });
     setOriginalDone(original);
-  }, [myStages, allStages]);
+  }, [myStages]);
 
   async function handleSave() {
     setSaving(true);
@@ -70,8 +62,6 @@ export default function EtapaPage() {
       setSaving(false);
     }
   }
-
-  const isLoading = loadingMine || loadingAll;
   const hasChanges = localStages.some(
     (s) => s.done !== originalDone[s.stage_id],
   );
@@ -138,15 +128,17 @@ export default function EtapaPage() {
                       {stage.title}
                     </p>
                   )}
-                  <p
-                    className={cn(
-                      "leading-snug break-all whitespace-pre-wrap",
-                      stage.title ? "text-xs text-muted-foreground" : "text-sm",
-                      stage.done && "line-through text-muted-foreground",
-                    )}
-                  >
-                    {stage.text}
-                  </p>
+                  {stage.text && (
+                    <p
+                      className={cn(
+                        "leading-snug break-all whitespace-pre-wrap",
+                        stage.title ? "text-xs text-muted-foreground" : "text-sm",
+                        stage.done && "line-through text-muted-foreground",
+                      )}
+                    >
+                      {stage.text}
+                    </p>
+                  )}
                 </div>
               </label>
             </GlassCard>

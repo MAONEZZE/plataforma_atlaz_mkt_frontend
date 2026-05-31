@@ -75,9 +75,9 @@ export function DashboardKPIs() {
   }
 
   const cards = [
-    { label: "Reuniões Realizadas", delta: data.calls_scheduled, icon: <Phone className="size-5" /> },
-    { label: "Ligações Realizadas", delta: data.calls_made, icon: <TrendingUp className="size-5" /> },
-    { label: "Vendas", delta: data.meetings_scheduled, icon: <Users className="size-5" /> },
+    { label: "Reunião Realizada", delta: data.meetings_held, icon: <Phone className="size-5" /> },
+    { label: "Ligação Realizada", delta: data.calls_made, icon: <TrendingUp className="size-5" /> },
+    { label: "Vendas", delta: data.sales, icon: <Users className="size-5" /> },
     { label: "Indicações", delta: data.referrals, icon: <UserPlus className="size-5" /> },
   ];
 

@@ -5,9 +5,9 @@ export interface MetricaSemanal {
   id: string;
   user_id: string;
   week_start: string;
-  calls_scheduled: number;
+  meetings_held: number;
   calls_made: number;
-  meetings_scheduled: number;
+  sales: number;
   referrals: number;
   created_at: string;
   updated_at: string;
@@ -15,9 +15,9 @@ export interface MetricaSemanal {
 
 export interface MetricaInput {
   week_start: string;
-  calls_scheduled: number;
+  meetings_held: number;
   calls_made: number;
-  meetings_scheduled: number;
+  sales: number;
   referrals: number;
 }
 
@@ -50,9 +50,9 @@ export interface DeltaOut {
 
 export interface DashboardResumo {
   month: string;
-  calls_scheduled?: DeltaOut;
+  meetings_held?: DeltaOut;
   calls_made?: DeltaOut;
-  meetings_scheduled?: DeltaOut;
+  sales?: DeltaOut;
   referrals?: DeltaOut;
 }
 
@@ -63,9 +63,9 @@ export async function getDashboardResumo(): Promise<DashboardResumo> {
 
 export interface SeriePoint {
   week: string;
-  calls_scheduled?: number;
+  meetings_held?: number;
   calls_made?: number;
-  meetings_scheduled?: number;
+  sales?: number;
   referrals?: number;
 }
 

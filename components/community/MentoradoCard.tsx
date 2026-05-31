@@ -17,6 +17,7 @@ interface MentoradoPublico {
   instagram_username: string | null;
   description?: string | null;
   role?: "cliente" | "admin";
+  product_name?: string | null;
 }
 
 interface MentoradoCardProps {
@@ -102,15 +103,20 @@ function SocialLinks({
 
 export function MentoradoCard({ mentorado }: MentoradoCardProps) {
   const [open, setOpen] = useState(false);
-  const { name, photo_url, linkedin_url, instagram_username, description, role } = mentorado;
+  const { name, photo_url, linkedin_url, instagram_username, description, role, product_name } = mentorado;
 
   return (
     <>
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="solid-surface p-5 flex flex-col items-center gap-3 text-center shadow-sm w-full cursor-pointer hover:-translate-y-1 hover:[box-shadow:0_0_22px_color-mix(in_srgb,var(--primary)_28%,transparent)] transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
+        className="solid-surface p-5 flex flex-col items-center gap-3 text-center shadow-sm w-full cursor-pointer hover:-translate-y-1 hover:[box-shadow:0_0_22px_color-mix(in_srgb,var(--primary)_28%,transparent)] transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 relative"
       >
+        {product_name && (
+          <span className="absolute top-3 left-3 inline-flex items-center rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
+            {product_name}
+          </span>
+        )}
         <Avatar className="size-20">
           {photo_url && <AvatarImage src={photo_url} alt={name} />}
           <AvatarFallback className="text-lg font-medium bg-primary/10 text-primary">
@@ -143,6 +149,11 @@ export function MentoradoCard({ mentorado }: MentoradoCardProps) {
 
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="sm:max-w-md">
+          {product_name && (
+            <span className="absolute top-4 left-4 inline-flex items-center rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium text-muted-foreground z-10">
+              {product_name}
+            </span>
+          )}
           <DialogHeader>
             <div className="flex flex-col items-center gap-4 text-center">
               <Avatar className="size-24">

@@ -17,9 +17,9 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { getDashboardSeries } from "@/lib/api/metricas";
 
 const SERIES = [
-  { key: "calls_scheduled", label: "Reun. Realizadas", color: "var(--chart-1)" },
-  { key: "calls_made", label: "Lig. Realizadas", color: "var(--chart-2)" },
-  { key: "meetings_scheduled", label: "Vendas", color: "var(--chart-3)" },
+  { key: "meetings_held", label: "Reun. Realizada", color: "var(--chart-1)" },
+  { key: "calls_made", label: "Lig. Realizada", color: "var(--chart-2)" },
+  { key: "sales", label: "Vendas", color: "var(--chart-3)" },
   { key: "referrals", label: "Indicações", color: "#3B82F6" },
 ] as const;
 

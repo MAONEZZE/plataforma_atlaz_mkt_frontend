@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -10,6 +10,7 @@ import PhoneInput from "react-phone-number-input";
 import "react-phone-number-input/style.css";
 import { format, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { Pencil, Trash2 } from "lucide-react";
 import { cadastroClienteSchema, type CadastroClienteInput } from "@/lib/utils/validations";
 import { adminClientes, adminStages, adminProdutos } from "@/lib/api/admin";
 import type { ClienteLinha } from "@/lib/api/admin";
@@ -26,7 +27,18 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogFooter,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 const PAGE_SIZE = 20;
 
@@ -53,62 +65,56 @@ function ClientManageModal({ client, onClose }: ClientManageModalProps) {
     queryFn: adminStages.list,
   });
 
-  const { data: clientStages } = useQuery({
-    queryKey: ["admin", "clients", client.id, "stages"],
-    queryFn: () => adminStages.getClientStages(client.id),
-    retry: false,
-  });
-
-  const [attachedIds, setAttachedIds] = useState<Set<string>>(new Set());
+  const originalAttachedIds = new Set((client.stages ?? []).map((s) => s.stage_id));
+  const [attachedIds, setAttachedIds] = useState<Set<string>>(
+    () => new Set((client.stages ?? []).map((s) => s.stage_id))
+  );
   const [selectedProductId, setSelectedProductId] = useState<string>(
     client.product_id ?? "",
   );
+  const [saving, setSaving] = useState(false);
 
-  useEffect(() => {
-    if (clientStages) {
-      setAttachedIds(new Set(clientStages.map((s) => s.stage_id)));
-    }
-  }, [clientStages]);
+  function toggleStage(stage_id: string, checked: boolean) {
+    setAttachedIds((prev) => {
+      const next = new Set(prev);
+      if (checked) next.add(stage_id);
+      else next.delete(stage_id);
+      return next;
+    });
+  }
 
-  const productMut = useMutation({
-    mutationFn: () =>
-      adminProdutos.assignToClient(client.id, selectedProductId),
-    onSuccess: () => {
-      toast.success("Produto atribuído!");
-      queryClient.invalidateQueries({ queryKey: ["admin", "clientes"] });
-    },
-    onError: () => toast.error("Erro ao atribuir produto."),
-  });
+  async function handleSave() {
+    setSaving(true);
+    try {
+      const ops: Promise<unknown>[] = [];
 
-  const stageMut = useMutation({
-    mutationFn: async ({
-      stage_id,
-      attach,
-    }: {
-      stage_id: string;
-      attach: boolean;
-    }) => {
-      if (attach) {
-        await adminStages.attachToClient(client.id, stage_id);
-      } else {
-        await adminStages.detachFromClient(client.id, stage_id);
+      const newProductId = selectedProductId || null;
+      const currentProductId = client.product_id ?? null;
+      if (newProductId !== currentProductId) {
+        ops.push(adminProdutos.assignToClient(client.id, newProductId));
       }
-      return { stage_id, attach };
-    },
-    onSuccess: ({ stage_id, attach }) => {
-      setAttachedIds((prev) => {
-        const next = new Set(prev);
-        if (attach) next.add(stage_id);
-        else next.delete(stage_id);
-        return next;
-      });
-      toast.success(attach ? "Etapa adicionada." : "Etapa removida.");
-      queryClient.invalidateQueries({
-        queryKey: ["admin", "clients", client.id, "stages"],
-      });
-    },
-    onError: () => toast.error("Erro ao alterar etapa."),
-  });
+
+      for (const id of originalAttachedIds) {
+        if (!attachedIds.has(id)) {
+          ops.push(adminStages.detachFromClient(client.id, id));
+        }
+      }
+      for (const id of attachedIds) {
+        if (!originalAttachedIds.has(id)) {
+          ops.push(adminStages.attachToClient(client.id, id));
+        }
+      }
+
+      await Promise.all(ops);
+      toast.success("Alterações salvas!");
+      queryClient.invalidateQueries({ queryKey: ["admin", "clientes"] });
+      onClose();
+    } catch {
+      toast.error("Erro ao salvar alterações.");
+    } finally {
+      setSaving(false);
+    }
+  }
 
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
@@ -121,28 +127,18 @@ function ClientManageModal({ client, onClose }: ClientManageModalProps) {
           {/* Product section */}
           <div className="space-y-3">
             <h3 className="text-sm font-medium">Produto</h3>
-            <div className="flex gap-2">
-              <select
-                value={selectedProductId}
-                onChange={(e) => setSelectedProductId(e.target.value)}
-                className="flex-1 h-9 rounded-lg border border-input bg-transparent px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring/50"
-              >
-                <option value="">Sem produto</option>
-                {produtos?.map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.name}
-                  </option>
-                ))}
-              </select>
-              <Button
-                variant="primary"
-                size="sm"
-                disabled={!selectedProductId || productMut.isPending}
-                onClick={() => productMut.mutate()}
-              >
-                {productMut.isPending ? "..." : "Salvar"}
-              </Button>
-            </div>
+            <select
+              value={selectedProductId}
+              onChange={(e) => setSelectedProductId(e.target.value)}
+              className="w-full h-9 rounded-lg border border-input bg-background text-foreground px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring/50"
+            >
+              <option value="">Sem produto</option>
+              {produtos?.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.name}
+                </option>
+              ))}
+            </select>
           </div>
 
           {/* Stages section */}
@@ -166,13 +162,7 @@ function ClientManageModal({ client, onClose }: ClientManageModalProps) {
                       <input
                         type="checkbox"
                         checked={attached}
-                        disabled={stageMut.isPending}
-                        onChange={(e) =>
-                          stageMut.mutate({
-                            stage_id: s.id,
-                            attach: e.target.checked,
-                          })
-                        }
+                        onChange={(e) => toggleStage(s.id, e.target.checked)}
                         className="size-4 accent-[var(--color-primary)]"
                       />
                       <div className="min-w-0 flex-1">
@@ -194,18 +184,24 @@ function ClientManageModal({ client, onClose }: ClientManageModalProps) {
               </div>
             )}
           </div>
-
-          {/* Close button */}
-          <div className="flex justify-end pt-1">
-            <button
-              type="button"
-              onClick={onClose}
-              className="text-sm text-muted-foreground hover:text-foreground transition-colors px-3 py-2"
-            >
-              Fechar
-            </button>
-          </div>
         </div>
+
+        <DialogFooter>
+          <button
+            type="button"
+            onClick={onClose}
+            className="text-sm text-muted-foreground hover:text-foreground transition-colors px-3 py-2"
+          >
+            Cancelar
+          </button>
+          <Button
+            variant="primary"
+            disabled={saving}
+            onClick={handleSave}
+          >
+            {saving ? "Salvando..." : "Salvar"}
+          </Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );
@@ -214,9 +210,22 @@ function ClientManageModal({ client, onClose }: ClientManageModalProps) {
 function ClientesTable() {
   const [page, setPage] = useState(1);
   const [managing, setManaging] = useState<ClienteLinha | null>(null);
+  const [deleting, setDeleting] = useState<ClienteLinha | null>(null);
+  const queryClient = useQueryClient();
+
   const { data, isLoading, isError } = useQuery({
     queryKey: ["admin", "clientes", page],
     queryFn: () => adminClientes.list({ page, page_size: PAGE_SIZE }),
+  });
+
+  const deleteMut = useMutation({
+    mutationFn: () => adminClientes.remove(deleting!.id),
+    onSuccess: () => {
+      toast.success("Cliente removido.");
+      setDeleting(null);
+      queryClient.invalidateQueries({ queryKey: ["admin", "clientes"] });
+    },
+    onError: () => toast.error("Erro ao remover cliente."),
   });
 
   if (isLoading) return <Skeleton className="h-64 w-full rounded-2xl" />;
@@ -231,78 +240,89 @@ function ClientesTable() {
   const totalPages = Math.ceil(total / PAGE_SIZE);
 
   return (
-    <GlassCard variant="solid" className="space-y-4 h-fit">
-      <div className="flex items-center justify-between">
-        <h2 className="font-semibold">Clientes cadastrados</h2>
-        <span className="text-xs text-muted-foreground">{total} registros</span>
-      </div>
+    <>
+      <GlassCard variant="solid" className="space-y-4 h-fit">
+        <div className="flex items-center justify-between">
+          <h2 className="font-semibold">Clientes cadastrados</h2>
+          <span className="text-xs text-muted-foreground">{total} registros</span>
+        </div>
 
-      {items.length === 0 ? (
-        <p className="text-sm text-muted-foreground text-center py-8">Nenhum cliente ainda.</p>
-      ) : (
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm table-fixed">
-            <thead>
-              <tr className="border-b border-border">
-                <th className="text-left pb-2 font-medium text-muted-foreground text-xs">Nome</th>
-                <th className="text-left pb-2 font-medium text-muted-foreground text-xs">Email</th>
-                <th className="text-left pb-2 font-medium text-muted-foreground text-xs">Telefone</th>
-                {items[0]?.created_at && (
-                  <th className="text-left pb-2 font-medium text-muted-foreground text-xs">Criado em</th>
-                )}
-                <th className="text-left pb-2 font-medium text-muted-foreground text-xs">Produto</th>
-                <th className="pb-2" />
-              </tr>
-            </thead>
-            <tbody>
-              {items.map((c) => (
-                <tr key={c.id} className="border-b border-border/50 last:border-0">
-                  <td className="py-2.5 pr-4 font-medium break-all">{c.name}</td>
-                  <td className="py-2.5 pr-4 text-muted-foreground break-all">{c.email}</td>
-                  <td className="py-2.5 pr-4 text-muted-foreground break-all">{formatPhone(c.phone)}</td>
-                  {c.created_at && (
-                    <td className="py-2.5 text-muted-foreground text-xs">
-                      {format(parseISO(c.created_at), "dd/MM/yyyy", { locale: ptBR })}
-                    </td>
+        {items.length === 0 ? (
+          <p className="text-sm text-muted-foreground text-center py-8">Nenhum cliente ainda.</p>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm table-fixed">
+              <thead>
+                <tr className="border-b border-border">
+                  <th className="text-left pb-2 font-medium text-muted-foreground text-xs">Nome</th>
+                  <th className="text-left pb-2 font-medium text-muted-foreground text-xs">Email</th>
+                  <th className="text-left pb-2 font-medium text-muted-foreground text-xs">Telefone</th>
+                  {items[0]?.created_at && (
+                    <th className="text-left pb-2 font-medium text-muted-foreground text-xs">Criado em</th>
                   )}
-                  <td className="py-2.5 pr-4 text-muted-foreground text-xs break-all">{c.product_name ?? "—"}</td>
-                  <td className="py-2.5">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => setManaging(c)}
-                    >
-                      Gerenciar
-                    </Button>
-                  </td>
+                  <th className="text-left pb-2 font-medium text-muted-foreground text-xs">Produto</th>
+                  <th className="pb-2" />
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
+              </thead>
+              <tbody>
+                {items.map((c) => (
+                  <tr key={c.id} className="border-b border-border/50 last:border-0">
+                    <td className="py-2.5 pr-4 font-medium break-all">{c.name}</td>
+                    <td className="py-2.5 pr-4 text-muted-foreground break-all">{c.email}</td>
+                    <td className="py-2.5 pr-4 text-muted-foreground break-all">{formatPhone(c.phone)}</td>
+                    {c.created_at && (
+                      <td className="py-2.5 text-muted-foreground text-xs">
+                        {format(parseISO(c.created_at), "dd/MM/yyyy", { locale: ptBR })}
+                      </td>
+                    )}
+                    <td className="py-2.5 pr-4 text-muted-foreground text-xs break-all">{c.product_name ?? "—"}</td>
+                    <td className="py-2.5">
+                      <div className="flex items-center gap-1 justify-end">
+                        <button
+                          type="button"
+                          onClick={() => setManaging(c)}
+                          className="p-1.5 rounded-lg hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
+                        >
+                          <Pencil className="size-3.5" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setDeleting(c)}
+                          className="p-1.5 rounded-lg hover:bg-danger/10 transition-colors text-muted-foreground hover:text-danger"
+                        >
+                          <Trash2 className="size-3.5" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
 
-      {totalPages > 1 && (
-        <div className="flex items-center justify-between pt-1">
-          <button
-            type="button"
-            onClick={() => setPage((p) => Math.max(1, p - 1))}
-            disabled={page <= 1}
-            className="text-xs text-primary hover:underline disabled:opacity-40 disabled:no-underline"
-          >
-            Anterior
-          </button>
-          <span className="text-xs text-muted-foreground">{page} / {totalPages}</span>
-          <button
-            type="button"
-            onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-            disabled={page >= totalPages}
-            className="text-xs text-primary hover:underline disabled:opacity-40 disabled:no-underline"
-          >
-            Próximo
-          </button>
-        </div>
-      )}
+        {totalPages > 1 && (
+          <div className="flex items-center justify-between pt-1">
+            <button
+              type="button"
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              disabled={page <= 1}
+              className="text-xs text-primary hover:underline disabled:opacity-40 disabled:no-underline"
+            >
+              Anterior
+            </button>
+            <span className="text-xs text-muted-foreground">{page} / {totalPages}</span>
+            <button
+              type="button"
+              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+              disabled={page >= totalPages}
+              className="text-xs text-primary hover:underline disabled:opacity-40 disabled:no-underline"
+            >
+              Próximo
+            </button>
+          </div>
+        )}
+      </GlassCard>
 
       {managing && (
         <ClientManageModal
@@ -310,7 +330,27 @@ function ClientesTable() {
           onClose={() => setManaging(null)}
         />
       )}
-    </GlassCard>
+
+      <AlertDialog open={!!deleting} onOpenChange={(o) => !o && setDeleting(null)}>
+        <AlertDialogContent className="bg-card">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remover cliente?</AlertDialogTitle>
+            <AlertDialogDescription>
+              &ldquo;{deleting?.name}&rdquo; será removido permanentemente.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => deleteMut.mutate()}
+              disabled={deleteMut.isPending}
+            >
+              {deleteMut.isPending ? "Removendo..." : "Remover"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 }
 

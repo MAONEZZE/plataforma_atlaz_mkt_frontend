@@ -7,9 +7,9 @@ export interface AdminDashboardLinha {
   user_id: string;
   name: string;
   photo_url: string | null;
-  calls_scheduled: number;
+  meetings_held: number;
   calls_made: number;
-  meetings_scheduled: number;
+  sales: number;
   referrals: number;
   last_metric_at: string | null;
   product_name?: string | null;
@@ -17,9 +17,9 @@ export interface AdminDashboardLinha {
 }
 
 export interface AdminAgregados {
-  calls_scheduled_total: number;
+  meetings_held_total: number;
   calls_made_total: number;
-  meetings_scheduled_total: number;
+  sales_total: number;
   referrals_total: number;
   users_with_metric_in_month: number;
   users_without_metric_in_month: number;
@@ -108,6 +108,13 @@ export interface ClienteInput {
   phone: string;
 }
 
+export interface ClienteStage {
+  stage_id: string;
+  title: string | null;
+  text: string;
+  done: boolean;
+}
+
 export interface ClienteLinha {
   id: string;
   name: string;
@@ -116,6 +123,7 @@ export interface ClienteLinha {
   created_at?: string;
   product_name?: string | null;
   product_id?: string | null;
+  stages: ClienteStage[];
 }
 
 export const adminClientes = {
@@ -126,6 +134,9 @@ export const adminClientes = {
   list: async (params?: { page?: number; page_size?: number; busca?: string }): Promise<Paginated<ClienteLinha>> => {
     const { data } = await api.get<Paginated<ClienteLinha>>("/admin/clients", { params });
     return data;
+  },
+  remove: async (id: string): Promise<void> => {
+    await api.delete(`/admin/clients/${id}`);
   },
 };
 
@@ -190,7 +201,7 @@ export const adminProdutos = {
   remove: async (id: string): Promise<void> => {
     await api.delete(`/admin/products/${id}`);
   },
-  assignToClient: async (user_id: string, product_id: string): Promise<void> => {
+  assignToClient: async (user_id: string, product_id: string | null): Promise<void> => {
     await api.patch(`/admin/clients/${user_id}/product`, { product_id });
   },
 };

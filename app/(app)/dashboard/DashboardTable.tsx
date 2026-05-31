@@ -49,9 +49,9 @@ export function DashboardTable() {
       header: "Semana",
       cell: ({ row }) => weekLabel(row.original.week_start),
     },
-    { accessorKey: "calls_scheduled", header: "Reun. Realizadas" },
-    { accessorKey: "calls_made", header: "Lig. Realizadas" },
-    { accessorKey: "meetings_scheduled", header: "Vendas" },
+    { accessorKey: "meetings_held", header: "Reun. Realizada" },
+    { accessorKey: "calls_made", header: "Lig. Realizada" },
+    { accessorKey: "sales", header: "Vendas" },
     { accessorKey: "referrals", header: "Indicações" },
     {
       id: "acoes",

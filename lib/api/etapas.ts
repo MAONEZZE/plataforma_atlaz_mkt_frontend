@@ -5,6 +5,8 @@ export interface UserStage {
   stage_id: string;
   done: boolean;
   updated_at: string;
+  title: string | null;
+  text: string | null;
 }
 
 export async function getMyStages(): Promise<UserStage[]> {

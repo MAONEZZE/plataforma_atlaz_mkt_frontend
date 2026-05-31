@@ -46,9 +46,9 @@ export default function AdminDashboardPage() {
         </div>
       ),
     },
-    { accessorKey: "calls_scheduled", header: "Reun. Realizadas" },
-    { accessorKey: "calls_made", header: "Lig. Realizadas" },
-    { accessorKey: "meetings_scheduled", header: "Vendas" },
+    { accessorKey: "meetings_held", header: "Reun. Realizada" },
+    { accessorKey: "calls_made", header: "Lig. Realizada" },
+    { accessorKey: "sales", header: "Vendas" },
     { accessorKey: "referrals", header: "Indicações" },
     {
       id: "produto",
@@ -92,9 +92,9 @@ export default function AdminDashboardPage() {
       ) : (
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           {[
-            { label: "Reuniões Realizadas", value: agregados?.calls_scheduled_total ?? 0, icon: <Phone className="size-5" /> },
-            { label: "Ligações Realizadas", value: agregados?.calls_made_total ?? 0, icon: <TrendingUp className="size-5" /> },
-            { label: "Vendas", value: agregados?.meetings_scheduled_total ?? 0, icon: <Users className="size-5" /> },
+            { label: "Reunião Realizada", value: agregados?.meetings_held_total ?? 0, icon: <Phone className="size-5" /> },
+            { label: "Ligação Realizada", value: agregados?.calls_made_total ?? 0, icon: <TrendingUp className="size-5" /> },
+            { label: "Vendas", value: agregados?.sales_total ?? 0, icon: <Users className="size-5" /> },
             { label: "Indicações", value: agregados?.referrals_total ?? 0, icon: <UserPlus className="size-5" /> },
           ].map((c) => (
             <GlassCard key={c.label} variant="soft" className="flex flex-col gap-2">

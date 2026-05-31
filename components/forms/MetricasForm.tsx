@@ -6,7 +6,7 @@ import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { startOfWeek, subDays } from "date-fns";
+import { format, startOfWeek, subDays } from "date-fns";
 import axios from "axios";
 import {
   createMetrica,
@@ -40,9 +40,9 @@ interface MetricasFormProps {
 }
 
 const NUMERIC_FIELDS = [
-  { name: "calls_scheduled" as const, label: "Reuniões Realizadas" },
-  { name: "calls_made" as const, label: "Ligações Realizadas" },
-  { name: "meetings_scheduled" as const, label: "Vendas" },
+  { name: "meetings_held" as const, label: "Reunião Realizada" },
+  { name: "calls_made" as const, label: "Ligação Realizada" },
+  { name: "sales" as const, label: "Vendas" },
   { name: "referrals" as const, label: "Indicações" },
 ];
 
@@ -65,9 +65,9 @@ export function MetricasForm({ mode, metricaId, onSuccess, onCancel }: MetricasF
     resolver: zodResolver(metricaSchema),
     mode: "onTouched",
     defaultValues: {
-      calls_scheduled: 0,
+      meetings_held: 0,
       calls_made: 0,
-      meetings_scheduled: 0,
+      sales: 0,
       referrals: 0,
     },
   });
@@ -86,9 +86,9 @@ export function MetricasForm({ mode, metricaId, onSuccess, onCancel }: MetricasF
     if (existingMetrica) {
       reset({
         week_start: existingMetrica.week_start,
-        calls_scheduled: existingMetrica.calls_scheduled,
+        meetings_held: existingMetrica.meetings_held,
         calls_made: existingMetrica.calls_made,
-        meetings_scheduled: existingMetrica.meetings_scheduled,
+        sales: existingMetrica.sales,
         referrals: existingMetrica.referrals,
       });
     }
@@ -98,9 +98,9 @@ export function MetricasForm({ mode, metricaId, onSuccess, onCancel }: MetricasF
     mutationFn: async (data: MetricaFormInput) => {
       const payload: MetricaInput = {
         week_start: data.week_start,
-        calls_scheduled: data.calls_scheduled,
+        meetings_held: data.meetings_held,
         calls_made: data.calls_made,
-        meetings_scheduled: data.meetings_scheduled,
+        sales: data.sales,
         referrals: data.referrals,
       };
       if (mode === "edit" && metricaId) {
@@ -180,8 +180,8 @@ export function MetricasForm({ mode, metricaId, onSuccess, onCancel }: MetricasF
               control={control}
               render={({ field }) => (
                 <WeekPicker
-                  value={field.value ? new Date(field.value) : null}
-                  onChange={(d) => field.onChange(d.toISOString().split("T")[0])}
+                  value={field.value ? new Date(field.value + "T00:00:00") : null}
+                  onChange={(d) => field.onChange(format(d, "yyyy-MM-dd"))}
                   minDate={minDate}
                   maxDate={maxDate}
                   disabled={mode === "edit"}

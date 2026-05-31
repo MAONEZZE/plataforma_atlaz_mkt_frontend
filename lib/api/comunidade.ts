@@ -9,6 +9,7 @@ export interface MentoradoPublico {
   instagram_username: string | null;
   description: string | null;
   role?: "cliente" | "admin";
+  product_name: string | null;
 }
 
 export async function listComunidade(params?: {
