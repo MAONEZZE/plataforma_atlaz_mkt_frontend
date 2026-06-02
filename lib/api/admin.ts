@@ -187,6 +187,7 @@ export interface ProdutoInput {
   name: string;
   value: number;
   description?: string | null;
+  cover_photo?: string | null;
 }
 
 export const adminProdutos = {

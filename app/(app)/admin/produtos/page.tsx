@@ -15,6 +15,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
+import { CoverPhotoUpload } from "@/components/ui/CoverPhotoUpload";
 import {
   Dialog,
   DialogContent,
@@ -35,18 +36,18 @@ import {
 
 const produtoSchema = z.object({
   name: z.string().min(1, "Nome obrigatório"),
-  value: z
-    .number()
-    .min(0, "Mínimo 0"),
+  value: z.number().min(0, "Mínimo 0"),
   description: z.string().optional(),
 });
 type ProdutoFormInput = z.infer<typeof produtoSchema>;
 
-function formatBRL(value: number) {
-  return new Intl.NumberFormat("pt-BR", {
-    style: "currency",
-    currency: "BRL",
-  }).format(value);
+function fileToBase64(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
 }
 
 export default function AdminProdutosPage() {
@@ -59,6 +60,14 @@ export default function AdminProdutosPage() {
   const [editing, setEditing] = useState<Produto | null>(null);
   const [deleting, setDeleting] = useState<Produto | null>(null);
 
+  // cover photo state — create form
+  const [createFile, setCreateFile] = useState<File | null>(null);
+  const [createPreview, setCreatePreview] = useState<string | null>(null);
+
+  // cover photo state — edit dialog
+  const [editFile, setEditFile] = useState<File | null>(null);
+  const [editPreview, setEditPreview] = useState<string | null>(null);
+
   const createForm = useForm<ProdutoFormInput>({
     resolver: zodResolver(produtoSchema),
     defaultValues: { name: "", value: 0, description: "" },
@@ -69,7 +78,9 @@ export default function AdminProdutosPage() {
   });
 
   function openEdit(p: Produto) {
-    editForm.reset({ name: p.name, value: p.value, description: p.description ?? "" });
+    editForm.reset({ name: p.name, value: 0, description: p.description ?? "" });
+    setEditFile(null);
+    setEditPreview(p.cover_photo ?? null);
     setEditing(p);
   }
 
@@ -82,17 +93,25 @@ export default function AdminProdutosPage() {
   }
 
   const createMut = useMutation({
-    mutationFn: (d: ProdutoFormInput) => adminProdutos.create(toPayload(d)),
+    mutationFn: async (d: ProdutoFormInput) => {
+      const cover_photo = createFile ? await fileToBase64(createFile) : null;
+      return adminProdutos.create({ ...toPayload(d), cover_photo });
+    },
     onSuccess: () => {
       toast.success("Produto criado!");
       createForm.reset({ name: "", value: 0, description: "" });
+      setCreateFile(null);
+      setCreatePreview(null);
       queryClient.invalidateQueries({ queryKey: ["produtos"] });
     },
     onError: () => toast.error("Erro ao criar produto."),
   });
 
   const editMut = useMutation({
-    mutationFn: (d: ProdutoFormInput) => adminProdutos.update(editing!.id, toPayload(d)),
+    mutationFn: async (d: ProdutoFormInput) => {
+      const cover_photo = editFile ? await fileToBase64(editFile) : editPreview;
+      return adminProdutos.update(editing!.id, { ...toPayload(d), cover_photo });
+    },
     onSuccess: () => {
       toast.success("Produto atualizado!");
       setEditing(null);
@@ -166,6 +185,14 @@ export default function AdminProdutosPage() {
               )}
             </div>
             <div className="space-y-1.5">
+              <Label>Foto de capa (opcional)</Label>
+              <CoverPhotoUpload
+                preview={createPreview}
+                onFileSelect={(f, url) => { setCreateFile(f); setCreatePreview(url); }}
+                onClear={() => { setCreateFile(null); setCreatePreview(null); }}
+              />
+            </div>
+            <div className="space-y-1.5">
               <Label>Descrição (opcional)</Label>
               <textarea
                 {...createForm.register("description")}
@@ -187,80 +214,89 @@ export default function AdminProdutosPage() {
 
         {/* Right — products table */}
         <GlassCard variant="solid" className="space-y-4 h-fit">
-        <div className="flex items-center justify-between">
-          <h2 className="font-semibold">Produtos cadastrados</h2>
-          <span className="text-xs text-muted-foreground">
-            {data?.length ?? 0} registros
-          </span>
-        </div>
-        {isLoading ? (
-          <Skeleton className="h-48 w-full rounded-xl" />
-        ) : data?.length === 0 ? (
-          <p className="text-sm text-muted-foreground text-center py-8">
-            Nenhum produto ainda.
-          </p>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm table-fixed">
-              <colgroup>
-                <col className="w-[28%]" />
-                <col className="w-[18%]" />
-                <col className="w-[42%]" />
-                <col className="w-[12%]" />
-              </colgroup>
-              <thead>
-                <tr className="border-b border-border">
-                  <th className="text-left pb-2 font-medium text-muted-foreground text-xs">
-                    Nome
-                  </th>
-                  <th className="text-left pb-2 font-medium text-muted-foreground text-xs">
-                    Valor
-                  </th>
-                  <th className="text-left pb-2 font-medium text-muted-foreground text-xs">
-                    Descrição
-                  </th>
-                  <th className="pb-2" />
-                </tr>
-              </thead>
-              <tbody>
-                {data?.map((p) => (
-                  <tr
-                    key={p.id}
-                    className="border-b border-border/50 last:border-0"
-                  >
-                    <td className="py-2.5 pr-4 font-medium break-all">{p.name}</td>
-                    <td className="py-2.5 pr-4 text-muted-foreground">
-                      {formatBRL(p.value)}
-                    </td>
-                    <td className="py-2.5 pr-4 text-muted-foreground text-xs">
-                      <span className="line-clamp-2 break-all" title={p.description ?? undefined}>
-                        {p.description ?? "—"}
-                      </span>
-                    </td>
-                    <td className="py-2.5">
-                      <div className="flex items-center gap-1 justify-end">
-                        <button
-                          type="button"
-                          onClick={() => openEdit(p)}
-                          className="p-1.5 rounded-lg hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
-                        >
-                          <Pencil className="size-3.5" />
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setDeleting(p)}
-                          className="p-1.5 rounded-lg hover:bg-danger/10 transition-colors text-muted-foreground hover:text-danger"
-                        >
-                          <Trash2 className="size-3.5" />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+          <div className="flex items-center justify-between">
+            <h2 className="font-semibold">Produtos cadastrados</h2>
+            <span className="text-xs text-muted-foreground">
+              {data?.length ?? 0} registros
+            </span>
           </div>
-        )}
+          {isLoading ? (
+            <Skeleton className="h-48 w-full rounded-xl" />
+          ) : data?.length === 0 ? (
+            <p className="text-sm text-muted-foreground text-center py-8">
+              Nenhum produto ainda.
+            </p>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm table-fixed">
+                <colgroup>
+                  <col className="w-[10%]" />
+                  <col className="w-[30%]" />
+                  <col className="w-[48%]" />
+                  <col className="w-[12%]" />
+                </colgroup>
+                <thead>
+                  <tr className="border-b border-border">
+                    <th className="text-left pb-2 font-medium text-muted-foreground text-xs">
+                      Capa
+                    </th>
+                    <th className="text-left pb-2 font-medium text-muted-foreground text-xs">
+                      Nome
+                    </th>
+                    <th className="text-left pb-2 font-medium text-muted-foreground text-xs">
+                      Descrição
+                    </th>
+                    <th className="pb-2" />
+                  </tr>
+                </thead>
+                <tbody>
+                  {data?.map((p) => (
+                    <tr
+                      key={p.id}
+                      className="border-b border-border/50 last:border-0"
+                    >
+                      <td className="py-2.5 pr-3">
+                        {p.cover_photo ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img
+                            src={p.cover_photo}
+                            alt={p.name}
+                            className="w-9 h-9 rounded-lg object-cover"
+                          />
+                        ) : (
+                          <div className="w-9 h-9 rounded-lg bg-muted" />
+                        )}
+                      </td>
+                      <td className="py-2.5 pr-4 font-medium break-all">{p.name}</td>
+                      <td className="py-2.5 pr-4 text-muted-foreground text-xs">
+                        <span className="line-clamp-2 break-all" title={p.description ?? undefined}>
+                          {p.description ?? "—"}
+                        </span>
+                      </td>
+                      <td className="py-2.5">
+                        <div className="flex items-center gap-1 justify-end">
+                          <button
+                            type="button"
+                            onClick={() => openEdit(p)}
+                            className="p-1.5 rounded-lg hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
+                          >
+                            <Pencil className="size-3.5" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setDeleting(p)}
+                            className="p-1.5 rounded-lg hover:bg-danger/10 transition-colors text-muted-foreground hover:text-danger"
+                          >
+                            <Trash2 className="size-3.5" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </GlassCard>
       </div>
 
@@ -291,12 +327,21 @@ export default function AdminProdutosPage() {
                 min={0}
                 step={0.01}
                 {...editForm.register("value", { valueAsNumber: true })}
+                placeholder="0,00"
               />
               {editForm.formState.errors.value && (
                 <p className="text-xs text-danger">
                   {editForm.formState.errors.value.message}
                 </p>
               )}
+            </div>
+            <div className="space-y-1.5">
+              <Label>Foto de capa (opcional)</Label>
+              <CoverPhotoUpload
+                preview={editPreview}
+                onFileSelect={(f, url) => { setEditFile(f); setEditPreview(url); }}
+                onClear={() => { setEditFile(null); setEditPreview(null); }}
+              />
             </div>
             <div className="space-y-1.5">
               <Label>Descrição (opcional)</Label>

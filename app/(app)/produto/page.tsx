@@ -7,13 +7,6 @@ import { GlassCard } from "@/components/glass/GlassCard";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 
-function formatBRL(value: number) {
-  return new Intl.NumberFormat("pt-BR", {
-    style: "currency",
-    currency: "BRL",
-  }).format(value);
-}
-
 export default function ProdutoPage() {
   const user = useCurrentUser();
   const { data, isLoading, isError, refetch } = useQuery({
@@ -57,20 +50,28 @@ export default function ProdutoPage() {
               <GlassCard
                 key={p.id}
                 variant={isMine ? "solid" : "soft"}
-                className="flex flex-col gap-3 relative"
+                className="flex flex-col gap-0 relative overflow-hidden p-0"
               >
-                {isMine && (
-                  <Badge className="absolute top-3 right-3 bg-primary/15 text-primary border-primary/30 text-xs">
-                    Seu plano
-                  </Badge>
+                {p.cover_photo && (
+                  <img
+                    src={p.cover_photo}
+                    alt={p.name}
+                    className="w-full h-36 object-cover"
+                  />
                 )}
-                <p className="font-semibold text-base pr-20 break-all">{p.name}</p>
-                <p className="text-2xl font-bold">{formatBRL(p.value)}</p>
-                {p.description && (
-                  <p className="text-sm text-muted-foreground whitespace-pre-wrap break-all">
-                    {p.description}
-                  </p>
-                )}
+                <div className="flex flex-col gap-3 p-4 relative">
+                  {isMine && (
+                    <Badge className="absolute top-3 right-3 bg-primary/15 text-primary border-primary/30 text-xs">
+                      Seu plano
+                    </Badge>
+                  )}
+                  <p className="font-semibold text-base pr-20 break-all">{p.name}</p>
+                  {p.description && (
+                    <p className="text-sm text-muted-foreground whitespace-pre-wrap break-all">
+                      {p.description}
+                    </p>
+                  )}
+                </div>
               </GlassCard>
             );
           })}

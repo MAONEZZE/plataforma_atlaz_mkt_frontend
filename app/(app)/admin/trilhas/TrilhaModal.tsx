@@ -1,17 +1,17 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useMutation } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { ImagePlus, X } from "lucide-react";
 import { adminTrilhas } from "@/lib/api/admin";
 import type { Trilha } from "@/lib/api/conteudo";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { CoverPhotoUpload } from "@/components/ui/CoverPhotoUpload";
 import {
   Dialog,
   DialogContent,
@@ -33,11 +33,8 @@ interface TrilhaModalProps {
   onSuccess: () => void;
 }
 
-const ALLOWED = ["image/jpeg", "image/png", "image/webp"];
-const MAX_SIZE = 5 * 1024 * 1024;
 
 export function TrilhaModal({ open, onOpenChange, editingTrilha, onSuccess }: TrilhaModalProps) {
-  const fileRef = useRef<HTMLInputElement>(null);
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
 
@@ -63,25 +60,9 @@ export function TrilhaModal({ open, onOpenChange, editingTrilha, onSuccess }: Tr
     }
   }, [open, editingTrilha, reset]);
 
-  function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const f = e.target.files?.[0];
-    if (!f) return;
-    if (!ALLOWED.includes(f.type)) {
-      toast.error("Formato inválido. Use JPG, PNG ou WebP.");
-      return;
-    }
-    if (f.size > MAX_SIZE) {
-      toast.error("Arquivo muito grande. Máximo 5MB.");
-      return;
-    }
-    setFile(f);
-    setPreview(URL.createObjectURL(f));
-  }
-
   function clearFile() {
     setFile(null);
     setPreview(editingTrilha?.cover_url ?? null);
-    if (fileRef.current) fileRef.current.value = "";
   }
 
   const mut = useMutation({
@@ -130,36 +111,11 @@ export function TrilhaModal({ open, onOpenChange, editingTrilha, onSuccess }: Tr
           </div>
           <div className="space-y-1.5">
             <Label>Imagem de capa (opcional)</Label>
-            <input
-              ref={fileRef}
-              type="file"
-              accept="image/jpeg,image/png,image/webp"
-              hidden
-              onChange={handleFileChange}
+            <CoverPhotoUpload
+              preview={preview}
+              onFileSelect={(f, url) => { setFile(f); setPreview(url); }}
+              onClear={clearFile}
             />
-            {preview ? (
-              <div className="relative rounded-lg overflow-hidden border border-border">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={preview} alt="Capa" className="w-full h-32 object-cover" />
-                <button
-                  type="button"
-                  onClick={clearFile}
-                  className="absolute top-1.5 right-1.5 size-7 rounded-full bg-background/80 flex items-center justify-center hover:bg-background"
-                >
-                  <X className="size-3.5" />
-                </button>
-              </div>
-            ) : (
-              <button
-                type="button"
-                onClick={() => fileRef.current?.click()}
-                className="w-full h-32 rounded-lg border border-dashed border-border flex flex-col items-center justify-center gap-1 text-muted-foreground hover:text-foreground hover:border-foreground transition-colors"
-              >
-                <ImagePlus className="size-6" />
-                <span className="text-sm">Escolher imagem do computador</span>
-                <span className="text-xs">JPG, PNG ou WebP — máx 5MB</span>
-              </button>
-            )}
           </div>
           <DialogFooter>
             <button

@@ -3,8 +3,8 @@ import { api } from "./client";
 export interface Produto {
   id: string;
   name: string;
-  value: number;
   description: string | null;
+  cover_photo: string | null;
   created_at: string;
 }
 
