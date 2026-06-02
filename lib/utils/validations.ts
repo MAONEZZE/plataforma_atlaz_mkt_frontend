@@ -26,6 +26,7 @@ export const cadastroClienteSchema = z.object({
     .string()
     .min(1, "Telefone obrigatório.")
     .refine((v) => isValidPhoneNumber(v), "Telefone inválido."),
+  description: z.string().optional(),
 });
 
 export type CadastroClienteInput = z.infer<typeof cadastroClienteSchema>;

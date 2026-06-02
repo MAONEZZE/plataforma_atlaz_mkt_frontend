@@ -106,6 +106,35 @@ export interface ClienteInput {
   email: string;
   password: string;
   phone: string;
+  description?: string | null;
+  product_id?: string | null;
+  stage_ids?: string[];
+}
+
+export interface ClienteUpdateInput {
+  name?: string | null;
+  phone?: string | null;
+  description?: string | null;
+  product_id?: string | null;
+  stage_ids?: string[] | null;
+}
+
+export interface ClienteCreateResponse {
+  id: string;
+  name: string;
+  email: string;
+  product_id: string | null;
+  product_name: string | null;
+}
+
+export interface ClienteUpdateResponse {
+  id: string;
+  name: string;
+  email: string;
+  phone: string | null;
+  description: string | null;
+  product_id: string | null;
+  product_name: string | null;
 }
 
 export interface ClienteStage {
@@ -120,15 +149,19 @@ export interface ClienteLinha {
   name: string;
   email: string;
   phone: string | null;
-  created_at?: string;
-  product_name?: string | null;
-  product_id?: string | null;
+  description: string | null;
+  product_name: string | null;
+  product_id: string | null;
   stages: ClienteStage[];
 }
 
 export const adminClientes = {
-  create: async (input: ClienteInput) => {
-    const { data } = await api.post("/admin/clients", input);
+  create: async (input: ClienteInput): Promise<ClienteCreateResponse> => {
+    const { data } = await api.post<ClienteCreateResponse>("/admin/clients", input);
+    return data;
+  },
+  update: async (id: string, input: ClienteUpdateInput): Promise<ClienteUpdateResponse> => {
+    const { data } = await api.patch<ClienteUpdateResponse>(`/admin/clients/${id}`, input);
     return data;
   },
   list: async (params?: { page?: number; page_size?: number; busca?: string }): Promise<Paginated<ClienteLinha>> => {

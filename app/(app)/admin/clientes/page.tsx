@@ -8,14 +8,13 @@ import { toast } from "sonner";
 import axios from "axios";
 import PhoneInput from "react-phone-number-input";
 import "react-phone-number-input/style.css";
-import { format, parseISO } from "date-fns";
-import { ptBR } from "date-fns/locale";
 import { Pencil, Trash2 } from "lucide-react";
 import { cadastroClienteSchema, type CadastroClienteInput } from "@/lib/utils/validations";
-import { adminClientes, adminStages, adminProdutos } from "@/lib/api/admin";
+import { adminClientes, adminStages } from "@/lib/api/admin";
 import type { ClienteLinha } from "@/lib/api/admin";
 import { listProdutos } from "@/lib/api/produtos";
 import { GlassCard } from "@/components/glass/GlassCard";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -42,6 +41,16 @@ import {
 
 const PAGE_SIZE = 20;
 
+const PHONE_CLASS =
+  "flex h-9 items-center rounded-lg border border-input bg-transparent focus-within:border-ring focus-within:ring-3 focus-within:ring-ring/50 " +
+  "[&_.PhoneInputCountry]:flex [&_.PhoneInputCountry]:items-center [&_.PhoneInputCountry]:pl-2 [&_.PhoneInputCountry]:gap-1 " +
+  "[&_.PhoneInputCountryIcon]:size-5 [&_.PhoneInputCountrySelect]:border-0 [&_.PhoneInputCountrySelect]:bg-transparent " +
+  "[&_.PhoneInputCountrySelect]:text-foreground [&_.PhoneInputCountrySelect]:outline-none [&_.PhoneInputCountrySelect]:text-sm [&_.PhoneInputCountrySelect]:px-1 " +
+  "[&_.PhoneInputInput]:flex-1 [&_.PhoneInputInput]:h-full [&_.PhoneInputInput]:border-0 [&_.PhoneInputInput]:bg-transparent " +
+  "[&_.PhoneInputInput]:px-2.5 [&_.PhoneInputInput]:text-sm [&_.PhoneInputInput]:outline-none [&_.PhoneInputInput]:ring-0 " +
+  "[&_.PhoneInputInput]:shadow-none [&_.PhoneInputInput]:focus:outline-none [&_.PhoneInputInput]:focus:ring-0 " +
+  "[&_.PhoneInputInput]:focus:shadow-none [&_.PhoneInputInput]:placeholder:text-muted-foreground";
+
 function formatPhone(phone: string | null): string {
   if (!phone) return "—";
   return phone.startsWith("+") ? phone : `+${phone}`;
@@ -65,7 +74,9 @@ function ClientManageModal({ client, onClose }: ClientManageModalProps) {
     queryFn: adminStages.list,
   });
 
-  const originalAttachedIds = new Set((client.stages ?? []).map((s) => s.stage_id));
+  const [clientName, setClientName] = useState(client.name);
+  const [clientPhone, setClientPhone] = useState(client.phone ?? "");
+  const [description, setDescription] = useState(client.description ?? "");
   const [attachedIds, setAttachedIds] = useState<Set<string>>(
     () => new Set((client.stages ?? []).map((s) => s.stage_id))
   );
@@ -86,26 +97,13 @@ function ClientManageModal({ client, onClose }: ClientManageModalProps) {
   async function handleSave() {
     setSaving(true);
     try {
-      const ops: Promise<unknown>[] = [];
-
-      const newProductId = selectedProductId || null;
-      const currentProductId = client.product_id ?? null;
-      if (newProductId !== currentProductId) {
-        ops.push(adminProdutos.assignToClient(client.id, newProductId));
-      }
-
-      for (const id of originalAttachedIds) {
-        if (!attachedIds.has(id)) {
-          ops.push(adminStages.detachFromClient(client.id, id));
-        }
-      }
-      for (const id of attachedIds) {
-        if (!originalAttachedIds.has(id)) {
-          ops.push(adminStages.attachToClient(client.id, id));
-        }
-      }
-
-      await Promise.all(ops);
+      await adminClientes.update(client.id, {
+        name: clientName || null,
+        phone: clientPhone || null,
+        description: description || null,
+        product_id: selectedProductId || null,
+        stage_ids: Array.from(attachedIds),
+      });
       toast.success("Alterações salvas!");
       queryClient.invalidateQueries({ queryKey: ["admin", "clientes"] });
       onClose();
@@ -118,15 +116,49 @@ function ClientManageModal({ client, onClose }: ClientManageModalProps) {
 
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-w-md" showCloseButton={false}>
+      <DialogContent className="max-w-lg" showCloseButton={false}>
         <DialogHeader>
-          <DialogTitle>Gerenciar — {client.name}</DialogTitle>
+          <DialogTitle>Editar — {client.name}</DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-6">
-          {/* Product section */}
-          <div className="space-y-3">
-            <h3 className="text-sm font-medium">Produto</h3>
+        <div className="space-y-4 max-h-[70vh] overflow-y-auto px-0.5 py-0.5">
+          {/* Name */}
+          <div className="space-y-1.5">
+            <Label>Nome</Label>
+            <Input
+              value={clientName}
+              onChange={(e) => setClientName(e.target.value)}
+              placeholder="Nome completo"
+            />
+          </div>
+
+          {/* Phone */}
+          <div className="space-y-1.5">
+            <Label>Telefone</Label>
+            <PhoneInput
+              international
+              defaultCountry="BR"
+              value={clientPhone}
+              onChange={(v) => setClientPhone(v ?? "")}
+              className={PHONE_CLASS}
+            />
+          </div>
+
+          {/* Description */}
+          <div className="space-y-1.5">
+            <Label>Descrição</Label>
+            <textarea
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="Descrição do cliente..."
+              rows={3}
+              className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring/50 resize-none"
+            />
+          </div>
+
+          {/* Product */}
+          <div className="space-y-1.5">
+            <Label>Produto</Label>
             <select
               value={selectedProductId}
               onChange={(e) => setSelectedProductId(e.target.value)}
@@ -141,17 +173,15 @@ function ClientManageModal({ client, onClose }: ClientManageModalProps) {
             </select>
           </div>
 
-          {/* Stages section */}
-          <div className="space-y-3">
-            <h3 className="text-sm font-medium">Etapas</h3>
+          {/* Stages */}
+          <div className="space-y-2">
+            <Label>Etapas</Label>
             {!allStages ? (
               <Skeleton className="h-24 rounded-xl" />
             ) : allStages.length === 0 ? (
-              <p className="text-xs text-muted-foreground">
-                Nenhuma etapa cadastrada.
-              </p>
+              <p className="text-xs text-muted-foreground">Nenhuma etapa cadastrada.</p>
             ) : (
-              <div className="space-y-1.5 max-h-60 overflow-y-auto pr-1">
+              <div className="space-y-1.5 max-h-48 overflow-y-auto pr-1">
                 {allStages.map((s) => {
                   const attached = attachedIds.has(s.id);
                   return (
@@ -169,12 +199,7 @@ function ClientManageModal({ client, onClose }: ClientManageModalProps) {
                         {s.title && (
                           <p className="text-sm font-medium break-all">{s.title}</p>
                         )}
-                        <p
-                          className={
-                            (s.title ? "text-xs text-muted-foreground" : "text-sm") +
-                            " break-all whitespace-pre-wrap"
-                          }
-                        >
+                        <p className={(s.title ? "text-xs text-muted-foreground" : "text-sm") + " break-all whitespace-pre-wrap"}>
                           {s.text}
                         </p>
                       </div>
@@ -194,11 +219,7 @@ function ClientManageModal({ client, onClose }: ClientManageModalProps) {
           >
             Cancelar
           </button>
-          <Button
-            variant="primary"
-            disabled={saving}
-            onClick={handleSave}
-          >
+          <Button variant="primary" disabled={saving} onClick={handleSave}>
             {saving ? "Salvando..." : "Salvar"}
           </Button>
         </DialogFooter>
@@ -257,9 +278,7 @@ function ClientesTable() {
                   <th className="text-left pb-2 font-medium text-muted-foreground text-xs">Nome</th>
                   <th className="text-left pb-2 font-medium text-muted-foreground text-xs">Email</th>
                   <th className="text-left pb-2 font-medium text-muted-foreground text-xs">Telefone</th>
-                  {items[0]?.created_at && (
-                    <th className="text-left pb-2 font-medium text-muted-foreground text-xs">Criado em</th>
-                  )}
+                  <th className="text-left pb-2 font-medium text-muted-foreground text-xs">Descrição</th>
                   <th className="text-left pb-2 font-medium text-muted-foreground text-xs">Produto</th>
                   <th className="pb-2" />
                 </tr>
@@ -270,11 +289,9 @@ function ClientesTable() {
                     <td className="py-2.5 pr-4 font-medium break-all">{c.name}</td>
                     <td className="py-2.5 pr-4 text-muted-foreground break-all">{c.email}</td>
                     <td className="py-2.5 pr-4 text-muted-foreground break-all">{formatPhone(c.phone)}</td>
-                    {c.created_at && (
-                      <td className="py-2.5 text-muted-foreground text-xs">
-                        {format(parseISO(c.created_at), "dd/MM/yyyy", { locale: ptBR })}
-                      </td>
-                    )}
+                    <td className="py-2.5 pr-4 text-muted-foreground text-xs max-w-[180px]">
+                      <span className="line-clamp-2">{c.description ?? "—"}</span>
+                    </td>
                     <td className="py-2.5 pr-4 text-muted-foreground text-xs break-all">{c.product_name ?? "—"}</td>
                     <td className="py-2.5">
                       <div className="flex items-center gap-1 justify-end">
@@ -357,6 +374,9 @@ function ClientesTable() {
 export default function CadastrarClientePage() {
   const queryClient = useQueryClient();
 
+  const { data: produtos } = useQuery({ queryKey: ["produtos"], queryFn: listProdutos });
+  const { data: allStages } = useQuery({ queryKey: ["admin", "stages"], queryFn: adminStages.list });
+
   const {
     register,
     handleSubmit,
@@ -371,11 +391,31 @@ export default function CadastrarClientePage() {
 
   const password = watch("password") ?? "";
 
+  const [selectedProductId, setSelectedProductId] = useState("");
+  const [attachedIds, setAttachedIds] = useState<Set<string>>(new Set());
+
+  function toggleCreateStage(stage_id: string, checked: boolean) {
+    setAttachedIds((prev) => {
+      const next = new Set(prev);
+      if (checked) next.add(stage_id);
+      else next.delete(stage_id);
+      return next;
+    });
+  }
+
   const mut = useMutation({
-    mutationFn: adminClientes.create,
+    mutationFn: (data: CadastroClienteInput) =>
+      adminClientes.create({
+        ...data,
+        description: data.description || null,
+        product_id: selectedProductId || null,
+        stage_ids: Array.from(attachedIds),
+      }),
     onSuccess: () => {
       toast.success("Cliente cadastrado com sucesso!");
       reset();
+      setSelectedProductId("");
+      setAttachedIds(new Set());
       queryClient.invalidateQueries({ queryKey: ["admin", "clientes"] });
     },
     onError: (err) => {
@@ -396,7 +436,7 @@ export default function CadastrarClientePage() {
         </p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-[380px_minmax(0,1fr)] gap-6 items-start">
+      <div className="grid grid-cols-1 lg:grid-cols-[420px_minmax(0,1fr)] gap-6 items-start">
         {/* Left — form */}
         <GlassCard variant="solid" className="space-y-4">
           <form
@@ -407,9 +447,7 @@ export default function CadastrarClientePage() {
             <div className="space-y-1.5">
               <Label htmlFor="name">Nome</Label>
               <Input id="name" {...register("name")} placeholder="Nome completo" />
-              {errors.name && (
-                <p className="text-xs text-danger">{errors.name.message}</p>
-              )}
+              {errors.name && <p className="text-xs text-danger">{errors.name.message}</p>}
             </div>
 
             <div className="space-y-1.5">
@@ -421,9 +459,7 @@ export default function CadastrarClientePage() {
                 {...register("email")}
                 placeholder="cliente@email.com"
               />
-              {errors.email && (
-                <p className="text-xs text-danger">{errors.email.message}</p>
-              )}
+              {errors.email && <p className="text-xs text-danger">{errors.email.message}</p>}
             </div>
 
             <div className="space-y-1.5">
@@ -435,9 +471,7 @@ export default function CadastrarClientePage() {
                 {...register("password")}
               />
               <PasswordStrengthIndicator password={password} />
-              {errors.password && (
-                <p className="text-xs text-danger">{errors.password.message}</p>
-              )}
+              {errors.password && <p className="text-xs text-danger">{errors.password.message}</p>}
             </div>
 
             <div className="space-y-1.5">
@@ -451,38 +485,64 @@ export default function CadastrarClientePage() {
                     defaultCountry="BR"
                     value={field.value ?? ""}
                     onChange={(v) => field.onChange(v ?? "")}
-                    className="flex h-9 items-center rounded-lg border border-input bg-transparent focus-within:border-ring focus-within:ring-3 focus-within:ring-ring/50
-                    [&_.PhoneInputCountry]:flex
-                    [&_.PhoneInputCountry]:items-center
-                    [&_.PhoneInputCountry]:pl-2
-                    [&_.PhoneInputCountry]:gap-1
-                    [&_.PhoneInputCountryIcon]:size-5
-                    [&_.PhoneInputCountrySelect]:border-0
-                    [&_.PhoneInputCountrySelect]:bg-transparent
-                    [&_.PhoneInputCountrySelect]:text-foreground
-                    [&_.PhoneInputCountrySelect]:outline-none
-                    [&_.PhoneInputCountrySelect]:text-sm
-                    [&_.PhoneInputCountrySelect]:px-1
-                    [&_.PhoneInputInput]:flex-1
-                    [&_.PhoneInputInput]:h-full
-                    [&_.PhoneInputInput]:border-0
-                    [&_.PhoneInputInput]:bg-transparent
-                    [&_.PhoneInputInput]:px-2.5
-                    [&_.PhoneInputInput]:text-sm
-                    [&_.PhoneInputInput]:outline-none
-                    [&_.PhoneInputInput]:ring-0
-                    [&_.PhoneInputInput]:shadow-none
-                    [&_.PhoneInputInput]:focus:outline-none
-                    [&_.PhoneInputInput]:focus:ring-0
-                    [&_.PhoneInputInput]:focus:shadow-none
-                    [&_.PhoneInputInput]:placeholder:text-muted-foreground"
+                    className={PHONE_CLASS}
                   />
                 )}
               />
-              {errors.phone && (
-                <p className="text-xs text-danger">{errors.phone.message}</p>
-              )}
+              {errors.phone && <p className="text-xs text-danger">{errors.phone.message}</p>}
             </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="description">Descrição</Label>
+              <textarea
+                id="description"
+                {...register("description")}
+                placeholder="Descrição do cliente..."
+                rows={3}
+                className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring/50 resize-none"
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <Label>Produto</Label>
+              <select
+                value={selectedProductId}
+                onChange={(e) => setSelectedProductId(e.target.value)}
+                className="w-full h-9 rounded-lg border border-input bg-background text-foreground px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring/50"
+              >
+                <option value="">Sem produto</option>
+                {produtos?.map((p) => (
+                  <option key={p.id} value={p.id}>{p.name}</option>
+                ))}
+              </select>
+            </div>
+
+            {allStages && allStages.length > 0 && (
+              <div className="space-y-2">
+                <Label>Etapas</Label>
+                <div className="space-y-1.5 max-h-48 overflow-y-auto pr-1 rounded-lg border border-input p-2">
+                  {allStages.map((s) => (
+                    <label
+                      key={s.id}
+                      className="flex items-center gap-2.5 rounded-lg px-2 py-1.5 hover:bg-muted/40 cursor-pointer transition-colors"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={attachedIds.has(s.id)}
+                        onChange={(e) => toggleCreateStage(s.id, e.target.checked)}
+                        className="size-4 accent-[var(--color-primary)]"
+                      />
+                      <div className="min-w-0 flex-1">
+                        {s.title && <p className="text-sm font-medium break-all">{s.title}</p>}
+                        <p className={(s.title ? "text-xs text-muted-foreground" : "text-sm") + " break-all whitespace-pre-wrap"}>
+                          {s.text}
+                        </p>
+                      </div>
+                    </label>
+                  ))}
+                </div>
+              </div>
+            )}
 
             <Button
               type="submit"
