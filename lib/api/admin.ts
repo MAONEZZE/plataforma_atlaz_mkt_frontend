@@ -93,9 +93,10 @@ export const adminAulas = {
     api.patch(`/admin/lessons/${id}`, input),
   remove: (id: string) => api.delete(`/admin/lessons/${id}`),
   reordenar: (input: ReordenarInput) => api.post("/admin/lessons/reorder", input),
-  uploadDocument: async (file: File): Promise<string> => {
+  uploadDocument: async (file: File, title: string): Promise<string> => {
     const fd = new FormData();
     fd.append("document", file);
+    fd.append("title", title);
     const { data } = await api.post<{ document_url: string }>("/admin/lessons/document", fd);
     return data.document_url;
   },

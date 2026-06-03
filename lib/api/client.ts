@@ -3,7 +3,7 @@
 import axios, { AxiosError, type InternalAxiosRequestConfig } from "axios";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 
-const baseURL = `${process.env.NEXT_PUBLIC_API_URL ?? ""}/api/v1`;
+const baseURL = "/api/v1";
 
 export const api = axios.create({ baseURL });
 

@@ -107,7 +107,7 @@ export function AulaModal({
         }
         let document_url: string | undefined;
         if (docFile) {
-          document_url = await adminAulas.uploadDocument(docFile);
+          document_url = await adminAulas.uploadDocument(docFile, data.title);
         }
         const payload = {
           title: data.title,
