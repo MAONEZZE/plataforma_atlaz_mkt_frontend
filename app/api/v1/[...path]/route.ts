@@ -29,12 +29,14 @@ async function proxy(req: NextRequest, params: { path: string[] }) {
   });
 
   const hasBody = req.method !== "GET" && req.method !== "HEAD";
-  const body = hasBody ? Buffer.from(await req.arrayBuffer()) : undefined;
+  const body = hasBody ? req.body : undefined;
 
   const upstream = await fetch(target, {
     method: req.method,
     headers: forwardHeaders,
     body,
+    // @ts-expect-error - duplex required for streaming request body in Node.js fetch
+    duplex: "half",
   });
 
   const responseHeaders = new Headers();
