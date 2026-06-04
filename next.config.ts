@@ -5,8 +5,8 @@ const nextConfig: NextConfig = {
     serverActions: {
       bodySizeLimit: "52mb",
     },
+    proxyClientMaxBodySize: "52mb",
   },
-  middlewareClientMaxBodySize: 52 * 1024 * 1024,
   images: {
     remotePatterns: [
       { protocol: "https", hostname: "**" },
