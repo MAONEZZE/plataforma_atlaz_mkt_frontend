@@ -62,14 +62,16 @@ export function TrilhaModal({ open, onOpenChange, editingTrilha, onSuccess }: Tr
 
   function clearFile() {
     setFile(null);
-    setPreview(editingTrilha?.cover_url ?? null);
+    setPreview(null);
   }
 
   const mut = useMutation({
     mutationFn: async (data: FormData) => {
-      let cover_url: string | undefined = editingTrilha?.cover_url ?? undefined;
+      let cover_url: string | null | undefined;
       if (file) {
         cover_url = await adminTrilhas.uploadCover(file);
+      } else {
+        cover_url = preview;
       }
       const payload = {
         title: data.title,
