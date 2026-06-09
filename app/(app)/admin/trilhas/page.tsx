@@ -149,7 +149,7 @@ export default function AdminTrilhasPage() {
 
       {trilhas && trilhas.length > 0 && (
         <div className="space-y-2">
-          {trilhas.map((trilha) => {
+          {[...trilhas].sort((a, b) => a.order - b.order).map((trilha) => {
             const isExpanded = expandedTracks.has(trilha.id);
             const detail = trackDetails.get(trilha.id);
             return (
@@ -165,6 +165,7 @@ export default function AdminTrilhasPage() {
                     ) : (
                       <ChevronRight className="size-4 shrink-0" />
                     )}
+                    <span className="text-xs font-mono text-muted-foreground w-6 shrink-0">#{trilha.order}</span>
                     <span className="font-medium">{trilha.title}</span>
                   </button>
                   <span className="text-xs text-muted-foreground mr-2">
@@ -217,7 +218,7 @@ export default function AdminTrilhasPage() {
                           </p>
                         ) : (
                           <div className="space-y-1.5">
-                            {detail.modules.map((modulo) => {
+                            {[...detail.modules].sort((a, b) => a.order - b.order).map((modulo) => {
                               const isModExpanded = expandedModules.has(modulo.id);
                               return (
                                 <div
@@ -235,6 +236,7 @@ export default function AdminTrilhasPage() {
                                       ) : (
                                         <ChevronRight className="size-3.5 shrink-0" />
                                       )}
+                                      <span className="text-xs font-mono text-muted-foreground w-5 shrink-0">#{modulo.order}</span>
                                       <span className="text-sm font-medium">
                                         {modulo.title}
                                       </span>
@@ -292,11 +294,12 @@ export default function AdminTrilhasPage() {
                                         </p>
                                       ) : (
                                         <div className="space-y-1">
-                                          {modulo.lessons.map((aula) => (
+                                          {[...modulo.lessons].sort((a, b) => a.order - b.order).map((aula) => (
                                             <div
                                               key={aula.id}
                                               className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-accent"
                                             >
+                                              <span className="text-xs font-mono text-muted-foreground w-5 shrink-0">#{aula.order}</span>
                                               <span className="text-sm flex-1 line-clamp-1">
                                                 {aula.title}
                                               </span>
