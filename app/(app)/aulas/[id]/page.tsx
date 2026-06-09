@@ -20,7 +20,8 @@ import { cn } from "@/lib/utils";
 import { Separator } from "@/components/ui/separator";
 
 function nextAula(trilha: TrilhaDetalhe, currentAulaId: string) {
-  const all = trilha.modules.flatMap((m) => m.lessons);
+  const sortedMods = [...trilha.modules].sort((a, b) => a.order - b.order);
+  const all = sortedMods.flatMap((m) => [...m.lessons].sort((a, b) => a.order - b.order));
   const idx = all.findIndex((a) => a.id === currentAulaId);
   if (idx === -1 || idx >= all.length - 1) return null;
   return all[idx + 1];
@@ -241,10 +242,10 @@ export default function AulaPage() {
           <h2 className="font-medium text-sm text-muted-foreground uppercase tracking-wide">
             Módulos
           </h2>
-          {trilha.modules.map((modulo) => (
+          {[...trilha.modules].sort((a, b) => a.order - b.order).map((modulo) => (
             <div key={modulo.id} className="solid-surface p-3 space-y-1">
               <p className="text-xs font-semibold text-muted-foreground mb-2">{modulo.title}</p>
-              {modulo.lessons.map((a) => (
+              {[...modulo.lessons].sort((a, b) => a.order - b.order).map((a) => (
                 <Link
                   key={a.id}
                   href={`/aulas/${a.id}`}
