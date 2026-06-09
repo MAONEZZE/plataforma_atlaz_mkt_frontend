@@ -43,12 +43,14 @@ export interface TrilhaInput {
   title: string;
   description?: string | null;
   cover_url?: string | null;
+  order?: number;
 }
 
 export interface ModuloInput {
   track_id: string;
   title: string;
   description?: string | null;
+  order?: number;
 }
 
 export interface AulaInput {
@@ -59,6 +61,7 @@ export interface AulaInput {
   document_url?: string;
   is_doc: boolean;
   duration_minutes?: number | null;
+  order?: number;
 }
 
 export interface ReordenarInput {
