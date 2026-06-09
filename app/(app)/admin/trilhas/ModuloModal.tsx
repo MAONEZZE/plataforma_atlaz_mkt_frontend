@@ -22,6 +22,7 @@ import {
 const schema = z.object({
   title: z.string().min(1, "Título obrigatório."),
   description: z.string().optional(),
+  order: z.number().int().min(0).optional(),
 });
 type FormData = z.infer<typeof schema>;
 
@@ -55,6 +56,7 @@ export function ModuloModal({
       reset({
         title: editingModulo?.title ?? "",
         description: editingModulo?.description ?? "",
+        order: editingModulo?.order ?? 0,
       });
     }
   }, [open, editingModulo, reset]);
@@ -64,6 +66,7 @@ export function ModuloModal({
       const payload = {
         title: data.title,
         description: data.description || undefined,
+        order: data.order ?? 0,
       };
       if (editingModulo) {
         return adminModulos.update(editingModulo.id, payload);
@@ -97,6 +100,14 @@ export function ModuloModal({
           <div className="space-y-1.5">
             <Label>Descrição (opcional)</Label>
             <Input {...register("description")} />
+          </div>
+          <div className="space-y-1.5">
+            <Label>Ordem</Label>
+            <Input
+              type="number"
+              min={0}
+              {...register("order", { valueAsNumber: true })}
+            />
           </div>
           <DialogFooter>
             <button
