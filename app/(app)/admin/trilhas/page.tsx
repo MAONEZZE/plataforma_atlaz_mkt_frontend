@@ -3,6 +3,8 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient, useQueries } from "@tanstack/react-query";
 import {
+  ArrowDown,
+  ArrowUp,
   ChevronDown,
   ChevronRight,
   Clock,
@@ -41,6 +43,13 @@ const DELETE_MESSAGES = {
   modulo: "Esta ação removerá o módulo e todas as suas aulas.",
   aula: "Esta ação removerá a aula. Comentários e progresso serão apagados.",
 };
+
+function swapAndReindex<T extends { id: string }>(arr: T[], idx: number, dir: "up" | "down") {
+  const next = [...arr];
+  const to = dir === "up" ? idx - 1 : idx + 1;
+  [next[idx], next[to]] = [next[to], next[idx]];
+  return next.map((item, i) => ({ id: item.id, order: i }));
+}
 
 export default function AdminTrilhasPage() {
   const qc = useQueryClient();
@@ -95,6 +104,38 @@ export default function AdminTrilhasPage() {
     onError: () => toast.error("Erro ao remover."),
   });
 
+  const reorderTracksMut = useMutation({
+    mutationFn: (vars: { sorted: Trilha[]; idx: number; dir: "up" | "down" }) =>
+      adminTrilhas.reordenar({ order: swapAndReindex(vars.sorted, vars.idx, vars.dir) }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["trilhas"] });
+      toast.success("Ordem atualizada.");
+    },
+    onError: () => toast.error("Erro ao reordenar."),
+  });
+
+  const reorderModulesMut = useMutation({
+    mutationFn: (vars: { sorted: Modulo[]; idx: number; dir: "up" | "down"; trackId: string }) =>
+      adminModulos.reordenar({ order: swapAndReindex(vars.sorted, vars.idx, vars.dir) }),
+    onSuccess: (_data, vars) => {
+      qc.invalidateQueries({ queryKey: ["trilha", vars.trackId] });
+      qc.invalidateQueries({ queryKey: ["trilhas"] });
+      toast.success("Ordem atualizada.");
+    },
+    onError: () => toast.error("Erro ao reordenar."),
+  });
+
+  const reorderLessonsMut = useMutation({
+    mutationFn: (vars: { sorted: Aula[]; idx: number; dir: "up" | "down"; trackId: string }) =>
+      adminAulas.reordenar({ order: swapAndReindex(vars.sorted, vars.idx, vars.dir) }),
+    onSuccess: (_data, vars) => {
+      qc.invalidateQueries({ queryKey: ["trilha", vars.trackId] });
+      qc.invalidateQueries({ queryKey: ["trilhas"] });
+      toast.success("Ordem atualizada.");
+    },
+    onError: () => toast.error("Erro ao reordenar."),
+  });
+
   function toggleTrack(id: string) {
     setExpandedTracks((prev) => {
       const next = new Set(prev);
@@ -117,6 +158,8 @@ export default function AdminTrilhasPage() {
     qc.invalidateQueries({ queryKey: ["trilhas"] });
     qc.invalidateQueries({ queryKey: ["trilha"] });
   }
+
+  const sortedTrilhas = trilhas ? [...trilhas].sort((a, b) => a.order - b.order) : [];
 
   return (
     <div className="space-y-6">
@@ -149,7 +192,7 @@ export default function AdminTrilhasPage() {
 
       {trilhas && trilhas.length > 0 && (
         <div className="space-y-2">
-          {[...trilhas].sort((a, b) => a.order - b.order).map((trilha) => {
+          {sortedTrilhas.map((trilha, trackIdx) => {
             const isExpanded = expandedTracks.has(trilha.id);
             const detail = trackDetails.get(trilha.id);
             return (
@@ -165,12 +208,27 @@ export default function AdminTrilhasPage() {
                     ) : (
                       <ChevronRight className="size-4 shrink-0" />
                     )}
-                    <span className="text-xs font-mono text-muted-foreground w-6 shrink-0">#{trilha.order}</span>
                     <span className="font-medium">{trilha.title}</span>
                   </button>
                   <span className="text-xs text-muted-foreground mr-2">
                     {trilha.total_lessons} aulas
                   </span>
+                  <button
+                    type="button"
+                    disabled={trackIdx === 0 || reorderTracksMut.isPending}
+                    onClick={() => reorderTracksMut.mutate({ sorted: sortedTrilhas, idx: trackIdx, dir: "up" })}
+                    className="p-1.5 rounded hover:bg-accent text-muted-foreground hover:text-foreground disabled:opacity-30 disabled:cursor-not-allowed"
+                  >
+                    <ArrowUp className="size-3.5" />
+                  </button>
+                  <button
+                    type="button"
+                    disabled={trackIdx === sortedTrilhas.length - 1 || reorderTracksMut.isPending}
+                    onClick={() => reorderTracksMut.mutate({ sorted: sortedTrilhas, idx: trackIdx, dir: "down" })}
+                    className="p-1.5 rounded hover:bg-accent text-muted-foreground hover:text-foreground disabled:opacity-30 disabled:cursor-not-allowed"
+                  >
+                    <ArrowDown className="size-3.5" />
+                  </button>
                   <button
                     type="button"
                     onClick={() => setTrilhaModal({ open: true, editing: trilha })}
@@ -218,131 +276,165 @@ export default function AdminTrilhasPage() {
                           </p>
                         ) : (
                           <div className="space-y-1.5">
-                            {[...detail.modules].sort((a, b) => a.order - b.order).map((modulo) => {
-                              const isModExpanded = expandedModules.has(modulo.id);
-                              return (
-                                <div
-                                  key={modulo.id}
-                                  className="rounded-lg border border-border"
-                                >
-                                  <div className="flex items-center gap-2 px-3 py-2">
-                                    <button
-                                      type="button"
-                                      onClick={() => toggleModule(modulo.id)}
-                                      className="flex items-center gap-1.5 flex-1 text-left"
-                                    >
-                                      {isModExpanded ? (
-                                        <ChevronDown className="size-3.5 shrink-0" />
-                                      ) : (
-                                        <ChevronRight className="size-3.5 shrink-0" />
-                                      )}
-                                      <span className="text-xs font-mono text-muted-foreground w-5 shrink-0">#{modulo.order}</span>
-                                      <span className="text-sm font-medium">
-                                        {modulo.title}
-                                      </span>
-                                    </button>
-                                    <span className="text-xs text-muted-foreground mr-2">
-                                      {modulo.lessons.length} aulas
-                                    </span>
-                                    <button
-                                      type="button"
-                                      onClick={() =>
-                                        setModuloModal({
-                                          open: true,
-                                          trackId: trilha.id,
-                                          editing: modulo,
-                                        })
-                                      }
-                                      className="p-1 rounded hover:bg-accent text-muted-foreground hover:text-foreground"
-                                    >
-                                      <Pencil className="size-3" />
-                                    </button>
-                                    <button
-                                      type="button"
-                                      onClick={() =>
-                                        setDeleteTarget({ type: "modulo", id: modulo.id })
-                                      }
-                                      className="p-1 rounded hover:bg-danger/10 text-muted-foreground hover:text-danger"
-                                    >
-                                      <Trash2 className="size-3" />
-                                    </button>
-                                  </div>
-                                  {isModExpanded && (
-                                    <div className="border-t border-border px-3 py-2 space-y-2 bg-background/40">
-                                      <div className="flex items-center justify-between">
-                                        <span className="text-xs uppercase tracking-wide text-muted-foreground">
-                                          Aulas
+                            {(() => {
+                              const sortedModules = [...detail.modules].sort((a, b) => a.order - b.order);
+                              return sortedModules.map((modulo, modIdx) => {
+                                const isModExpanded = expandedModules.has(modulo.id);
+                                const sortedLessons = [...modulo.lessons].sort((a, b) => a.order - b.order);
+                                return (
+                                  <div
+                                    key={modulo.id}
+                                    className="rounded-lg border border-border"
+                                  >
+                                    <div className="flex items-center gap-2 px-3 py-2">
+                                      <button
+                                        type="button"
+                                        onClick={() => toggleModule(modulo.id)}
+                                        className="flex items-center gap-1.5 flex-1 text-left"
+                                      >
+                                        {isModExpanded ? (
+                                          <ChevronDown className="size-3.5 shrink-0" />
+                                        ) : (
+                                          <ChevronRight className="size-3.5 shrink-0" />
+                                        )}
+                                        <span className="text-sm font-medium">
+                                          {modulo.title}
                                         </span>
-                                        <Button
-                                          size="sm"
-                                          variant="outline"
-                                          onClick={() =>
-                                            setAulaModal({
-                                              open: true,
-                                              moduleId: modulo.id,
-                                              editing: null,
-                                            })
-                                          }
-                                        >
-                                          <Plus className="mr-1 size-3.5" />
-                                          Adicionar aula
-                                        </Button>
-                                      </div>
-                                      {modulo.lessons.length === 0 ? (
-                                        <p className="text-xs text-muted-foreground italic py-1">
-                                          Nenhuma aula ainda.
-                                        </p>
-                                      ) : (
-                                        <div className="space-y-1">
-                                          {[...modulo.lessons].sort((a, b) => a.order - b.order).map((aula) => (
-                                            <div
-                                              key={aula.id}
-                                              className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-accent"
-                                            >
-                                              <span className="text-xs font-mono text-muted-foreground w-5 shrink-0">#{aula.order}</span>
-                                              <span className="text-sm flex-1 line-clamp-1">
-                                                {aula.title}
-                                              </span>
-                                              {aula.duration_minutes !== null && (
-                                                <span className="flex items-center gap-0.5 text-xs text-muted-foreground">
-                                                  <Clock className="size-3" />
-                                                  {aula.duration_minutes}min
-                                                </span>
-                                              )}
-                                              <button
-                                                type="button"
-                                                onClick={() =>
-                                                  setAulaModal({
-                                                    open: true,
-                                                    moduleId: modulo.id,
-                                                    editing: aula,
-                                                  })
-                                                }
-                                                className="p-1 rounded hover:bg-accent text-muted-foreground hover:text-foreground"
-                                              >
-                                                <Pencil className="size-3" />
-                                              </button>
-                                              <button
-                                                type="button"
-                                                onClick={() =>
-                                                  setDeleteTarget({
-                                                    type: "aula",
-                                                    id: aula.id,
-                                                  })
-                                                }
-                                                className="p-1 rounded hover:bg-danger/10 text-muted-foreground hover:text-danger"
-                                              >
-                                                <Trash2 className="size-3" />
-                                              </button>
-                                            </div>
-                                          ))}
-                                        </div>
-                                      )}
+                                      </button>
+                                      <span className="text-xs text-muted-foreground mr-2">
+                                        {modulo.lessons.length} aulas
+                                      </span>
+                                      <button
+                                        type="button"
+                                        disabled={modIdx === 0 || reorderModulesMut.isPending}
+                                        onClick={() => reorderModulesMut.mutate({ sorted: sortedModules, idx: modIdx, dir: "up", trackId: trilha.id })}
+                                        className="p-1 rounded hover:bg-accent text-muted-foreground hover:text-foreground disabled:opacity-30 disabled:cursor-not-allowed"
+                                      >
+                                        <ArrowUp className="size-3" />
+                                      </button>
+                                      <button
+                                        type="button"
+                                        disabled={modIdx === sortedModules.length - 1 || reorderModulesMut.isPending}
+                                        onClick={() => reorderModulesMut.mutate({ sorted: sortedModules, idx: modIdx, dir: "down", trackId: trilha.id })}
+                                        className="p-1 rounded hover:bg-accent text-muted-foreground hover:text-foreground disabled:opacity-30 disabled:cursor-not-allowed"
+                                      >
+                                        <ArrowDown className="size-3" />
+                                      </button>
+                                      <button
+                                        type="button"
+                                        onClick={() =>
+                                          setModuloModal({
+                                            open: true,
+                                            trackId: trilha.id,
+                                            editing: modulo,
+                                          })
+                                        }
+                                        className="p-1 rounded hover:bg-accent text-muted-foreground hover:text-foreground"
+                                      >
+                                        <Pencil className="size-3" />
+                                      </button>
+                                      <button
+                                        type="button"
+                                        onClick={() =>
+                                          setDeleteTarget({ type: "modulo", id: modulo.id })
+                                        }
+                                        className="p-1 rounded hover:bg-danger/10 text-muted-foreground hover:text-danger"
+                                      >
+                                        <Trash2 className="size-3" />
+                                      </button>
                                     </div>
-                                  )}
-                                </div>
-                              );
-                            })}
+                                    {isModExpanded && (
+                                      <div className="border-t border-border px-3 py-2 space-y-2 bg-background/40">
+                                        <div className="flex items-center justify-between">
+                                          <span className="text-xs uppercase tracking-wide text-muted-foreground">
+                                            Aulas
+                                          </span>
+                                          <Button
+                                            size="sm"
+                                            variant="outline"
+                                            onClick={() =>
+                                              setAulaModal({
+                                                open: true,
+                                                moduleId: modulo.id,
+                                                editing: null,
+                                              })
+                                            }
+                                          >
+                                            <Plus className="mr-1 size-3.5" />
+                                            Adicionar aula
+                                          </Button>
+                                        </div>
+                                        {sortedLessons.length === 0 ? (
+                                          <p className="text-xs text-muted-foreground italic py-1">
+                                            Nenhuma aula ainda.
+                                          </p>
+                                        ) : (
+                                          <div className="space-y-1">
+                                            {sortedLessons.map((aula, aulaIdx) => (
+                                              <div
+                                                key={aula.id}
+                                                className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-accent"
+                                              >
+                                                <span className="text-sm flex-1 line-clamp-1">
+                                                  {aula.title}
+                                                </span>
+                                                {aula.duration_minutes !== null && (
+                                                  <span className="flex items-center gap-0.5 text-xs text-muted-foreground">
+                                                    <Clock className="size-3" />
+                                                    {aula.duration_minutes}min
+                                                  </span>
+                                                )}
+                                                <button
+                                                  type="button"
+                                                  disabled={aulaIdx === 0 || reorderLessonsMut.isPending}
+                                                  onClick={() => reorderLessonsMut.mutate({ sorted: sortedLessons, idx: aulaIdx, dir: "up", trackId: trilha.id })}
+                                                  className="p-1 rounded hover:bg-accent text-muted-foreground hover:text-foreground disabled:opacity-30 disabled:cursor-not-allowed"
+                                                >
+                                                  <ArrowUp className="size-3" />
+                                                </button>
+                                                <button
+                                                  type="button"
+                                                  disabled={aulaIdx === sortedLessons.length - 1 || reorderLessonsMut.isPending}
+                                                  onClick={() => reorderLessonsMut.mutate({ sorted: sortedLessons, idx: aulaIdx, dir: "down", trackId: trilha.id })}
+                                                  className="p-1 rounded hover:bg-accent text-muted-foreground hover:text-foreground disabled:opacity-30 disabled:cursor-not-allowed"
+                                                >
+                                                  <ArrowDown className="size-3" />
+                                                </button>
+                                                <button
+                                                  type="button"
+                                                  onClick={() =>
+                                                    setAulaModal({
+                                                      open: true,
+                                                      moduleId: modulo.id,
+                                                      editing: aula,
+                                                    })
+                                                  }
+                                                  className="p-1 rounded hover:bg-accent text-muted-foreground hover:text-foreground"
+                                                >
+                                                  <Pencil className="size-3" />
+                                                </button>
+                                                <button
+                                                  type="button"
+                                                  onClick={() =>
+                                                    setDeleteTarget({
+                                                      type: "aula",
+                                                      id: aula.id,
+                                                    })
+                                                  }
+                                                  className="p-1 rounded hover:bg-danger/10 text-muted-foreground hover:text-danger"
+                                                >
+                                                  <Trash2 className="size-3" />
+                                                </button>
+                                              </div>
+                                            ))}
+                                          </div>
+                                        )}
+                                      </div>
+                                    )}
+                                  </div>
+                                );
+                              });
+                            })()}
                           </div>
                         )}
                       </>
