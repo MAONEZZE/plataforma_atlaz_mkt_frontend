@@ -25,6 +25,7 @@ const schema = z.object({
   title: z.string().min(1, "Título obrigatório."),
   description: z.string().optional(),
   drive_url: z.string().optional(),
+  order: z.number().int().min(0).optional(),
 });
 type FormData = z.infer<typeof schema> & { duration_minutes?: number };
 
@@ -76,6 +77,7 @@ export function AulaModal({
         description: "",
         drive_url: "",
         duration_minutes: editingAula?.duration_minutes ?? undefined,
+        order: editingAula?.order ?? 0,
       });
     }
   }, [open, editingAula, reset]);
@@ -112,6 +114,7 @@ export function AulaModal({
         const payload = {
           title: data.title,
           is_doc: true,
+          order: data.order ?? 0,
           ...(document_url ? { document_url } : {}),
         };
         if (editingAula) {
@@ -133,6 +136,7 @@ export function AulaModal({
         description: data.description || undefined,
         drive_url: data.drive_url,
         is_doc: false,
+        order: data.order ?? 0,
         duration_minutes:
           typeof dur === "number" && Number.isFinite(dur) && dur >= 0 ? Math.floor(dur) : undefined,
       };
@@ -164,6 +168,15 @@ export function AulaModal({
             <Label>Título</Label>
             <Input {...register("title")} />
             {errors.title && <p className="text-xs text-danger">{errors.title.message}</p>}
+          </div>
+
+          <div className="space-y-1.5">
+            <Label>Ordem</Label>
+            <Input
+              type="number"
+              min={0}
+              {...register("order", { valueAsNumber: true })}
+            />
           </div>
 
           <div className="space-y-1.5">
