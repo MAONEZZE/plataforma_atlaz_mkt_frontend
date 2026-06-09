@@ -6,6 +6,7 @@ export interface Trilha {
   title: string;
   description: string | null;
   cover_url: string | null;
+  order: number;
   total_lessons: number;
   lessons_completed: number;
   progress_pct: number;
