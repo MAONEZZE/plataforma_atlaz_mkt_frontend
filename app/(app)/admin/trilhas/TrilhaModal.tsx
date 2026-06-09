@@ -115,14 +115,6 @@ export function TrilhaModal({ open, onOpenChange, editingTrilha, onSuccess }: Tr
             <Input {...register("description")} />
           </div>
           <div className="space-y-1.5">
-            <Label>Ordem</Label>
-            <Input
-              type="number"
-              min={0}
-              {...register("order", { valueAsNumber: true })}
-            />
-          </div>
-          <div className="space-y-1.5">
             <Label>Imagem de capa (opcional)</Label>
             <CoverPhotoUpload
               preview={preview}

@@ -101,14 +101,6 @@ export function ModuloModal({
             <Label>Descrição (opcional)</Label>
             <Input {...register("description")} />
           </div>
-          <div className="space-y-1.5">
-            <Label>Ordem</Label>
-            <Input
-              type="number"
-              min={0}
-              {...register("order", { valueAsNumber: true })}
-            />
-          </div>
           <DialogFooter>
             <button
               type="button"

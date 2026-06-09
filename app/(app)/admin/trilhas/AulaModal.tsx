@@ -171,15 +171,6 @@ export function AulaModal({
           </div>
 
           <div className="space-y-1.5">
-            <Label>Ordem</Label>
-            <Input
-              type="number"
-              min={0}
-              {...register("order", { valueAsNumber: true })}
-            />
-          </div>
-
-          <div className="space-y-1.5">
             <div className="flex items-center justify-between">
               <Label>{mode === "doc" ? "Documento" : "Descrição (opcional)"}</Label>
               <Tabs value={mode} onValueChange={(v) => setMode(v as "video" | "doc")}>
