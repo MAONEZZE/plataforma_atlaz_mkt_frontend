@@ -33,7 +33,8 @@ export default function TrilhaDetalhePage() {
   if (isLoading) return <Skeleton className="h-96 w-full rounded-2xl" />;
   if (!trilha) return <div className="text-danger">Trilha não encontrada.</div>;
 
-  const allAulas = trilha.modules.flatMap((m) => m.lessons);
+  const sortedModules = [...trilha.modules].sort((a, b) => a.order - b.order);
+  const allAulas = sortedModules.flatMap((m) => [...m.lessons].sort((a, b) => a.order - b.order));
   const totalAulas = allAulas.length;
   const aulasConcluidas = allAulas.filter((a) => a.completed).length;
   const pct = Math.round(trilha.progress_pct);
@@ -69,8 +70,8 @@ export default function TrilhaDetalhePage() {
       {trilha.modules.length === 0 ? (
         <p className="text-muted-foreground text-sm">Nenhum módulo nesta trilha.</p>
       ) : (
-        <Accordion defaultValue={trilha.modules[0]?.id ? [trilha.modules[0].id] : []}>
-          {trilha.modules.map((modulo) => (
+        <Accordion defaultValue={sortedModules[0]?.id ? [sortedModules[0].id] : []}>
+          {sortedModules.map((modulo) => (
             <AccordionItem key={modulo.id} value={modulo.id} className="solid-surface mb-3 rounded-xl border-0 px-4">
               <AccordionTrigger className="hover:no-underline">
                 <div className="flex items-center gap-2">
@@ -80,7 +81,7 @@ export default function TrilhaDetalhePage() {
               </AccordionTrigger>
               <AccordionContent>
                 <div className="space-y-1 pb-2">
-                  {modulo.lessons.map((aula) => {
+                  {[...modulo.lessons].sort((a, b) => a.order - b.order).map((aula) => {
                     const isNext = aula.id === nextAula?.id;
                     return (
                       <Link
