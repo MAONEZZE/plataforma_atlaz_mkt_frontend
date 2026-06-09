@@ -23,6 +23,7 @@ import {
 const schema = z.object({
   title: z.string().min(1, "Título obrigatório."),
   description: z.string().optional(),
+  order: z.number().int().min(0).optional(),
 });
 type FormData = z.infer<typeof schema>;
 
@@ -53,6 +54,7 @@ export function TrilhaModal({ open, onOpenChange, editingTrilha, onSuccess }: Tr
       reset({
         title: editingTrilha?.title ?? "",
         description: editingTrilha?.description ?? "",
+        order: editingTrilha?.order ?? 0,
       });
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setFile(null);
@@ -77,6 +79,7 @@ export function TrilhaModal({ open, onOpenChange, editingTrilha, onSuccess }: Tr
         title: data.title,
         description: data.description || undefined,
         cover_url,
+        order: data.order ?? 0,
       };
       if (editingTrilha) {
         return adminTrilhas.update(editingTrilha.id, payload);
@@ -110,6 +113,14 @@ export function TrilhaModal({ open, onOpenChange, editingTrilha, onSuccess }: Tr
           <div className="space-y-1.5">
             <Label>Descrição (opcional)</Label>
             <Input {...register("description")} />
+          </div>
+          <div className="space-y-1.5">
+            <Label>Ordem</Label>
+            <Input
+              type="number"
+              min={0}
+              {...register("order", { valueAsNumber: true })}
+            />
           </div>
           <div className="space-y-1.5">
             <Label>Imagem de capa (opcional)</Label>
