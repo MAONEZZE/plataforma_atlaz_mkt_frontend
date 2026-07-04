@@ -69,72 +69,70 @@ export function DataTable<T>({
 
   return (
     <div className={cn("space-y-4", className)}>
-      <div className="rounded-xl overflow-hidden border border-border solid-surface">
-        <Table>
-          <TableHeader>
-            {table.getHeaderGroups().map((hg) => (
-              <TableRow key={hg.id}>
-                {hg.headers.map((header) => (
-                  <TableHead key={header.id}>
-                    {header.isPlaceholder ? null : header.column.getCanSort() ? (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="-ml-2 h-8 font-medium"
-                        onClick={header.column.getToggleSortingHandler()}
-                      >
-                        {flexRender(header.column.columnDef.header, header.getContext())}
-                        {header.column.getIsSorted() === "asc" ? (
-                          <ChevronUp className="ml-1 size-3.5" />
-                        ) : header.column.getIsSorted() === "desc" ? (
-                          <ChevronDown className="ml-1 size-3.5" />
-                        ) : (
-                          <ArrowUpDown className="ml-1 size-3.5 opacity-40" />
-                        )}
-                      </Button>
-                    ) : (
-                      flexRender(header.column.columnDef.header, header.getContext())
-                    )}
-                  </TableHead>
+      <Table>
+        <TableHeader>
+          {table.getHeaderGroups().map((hg) => (
+            <TableRow key={hg.id}>
+              {hg.headers.map((header) => (
+                <TableHead key={header.id}>
+                  {header.isPlaceholder ? null : header.column.getCanSort() ? (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="-ml-2 h-8 font-medium"
+                      onClick={header.column.getToggleSortingHandler()}
+                    >
+                      {flexRender(header.column.columnDef.header, header.getContext())}
+                      {header.column.getIsSorted() === "asc" ? (
+                        <ChevronUp className="ml-1 size-3.5" />
+                      ) : header.column.getIsSorted() === "desc" ? (
+                        <ChevronDown className="ml-1 size-3.5" />
+                      ) : (
+                        <ArrowUpDown className="ml-1 size-3.5 opacity-40" />
+                      )}
+                    </Button>
+                  ) : (
+                    flexRender(header.column.columnDef.header, header.getContext())
+                  )}
+                </TableHead>
+              ))}
+            </TableRow>
+          ))}
+        </TableHeader>
+        <TableBody>
+          {isLoading ? (
+            Array.from({ length: 5 }).map((_, i) => (
+              <TableRow key={i}>
+                {columns.map((_, j) => (
+                  <TableCell key={j}>
+                    <Skeleton className="h-4 w-full" />
+                  </TableCell>
                 ))}
               </TableRow>
-            ))}
-          </TableHeader>
-          <TableBody>
-            {isLoading ? (
-              Array.from({ length: 5 }).map((_, i) => (
-                <TableRow key={i}>
-                  {columns.map((_, j) => (
-                    <TableCell key={j}>
-                      <Skeleton className="h-4 w-full" />
-                    </TableCell>
-                  ))}
-                </TableRow>
-              ))
-            ) : table.getRowModel().rows.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={columns.length} className="h-32 text-center">
-                  {emptyState ?? "Nenhum resultado."}
-                </TableCell>
+            ))
+          ) : table.getRowModel().rows.length === 0 ? (
+            <TableRow>
+              <TableCell colSpan={columns.length} className="h-32 text-center">
+                {emptyState ?? "Nenhum resultado."}
+              </TableCell>
+            </TableRow>
+          ) : (
+            table.getRowModel().rows.map((row) => (
+              <TableRow
+                key={row.id}
+                onClick={() => onRowClick?.(row.original)}
+                className={cn(onRowClick && "cursor-pointer hover:bg-accent/40")}
+              >
+                {row.getVisibleCells().map((cell) => (
+                  <TableCell key={cell.id}>
+                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                  </TableCell>
+                ))}
               </TableRow>
-            ) : (
-              table.getRowModel().rows.map((row) => (
-                <TableRow
-                  key={row.id}
-                  onClick={() => onRowClick?.(row.original)}
-                  className={cn(onRowClick && "cursor-pointer hover:bg-accent/40")}
-                >
-                  {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id}>
-                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                    </TableCell>
-                  ))}
-                </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
-      </div>
+            ))
+          )}
+        </TableBody>
+      </Table>
 
       {pagination && totalPages > 1 && (
         <Pagination>
