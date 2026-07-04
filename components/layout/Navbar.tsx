@@ -17,8 +17,10 @@ import { useCurrentUser } from "@/lib/auth/use-current-user";
 import { cn } from "@/lib/utils";
 
 type NavItem =
-  | { type: "link"; href: string; label: string }
+  | { type: "link"; href: string; label: string; isActive?: (pathname: string) => boolean }
   | { type: "dropdown"; label: string; matchPrefixes: string[]; items: { href: string; label: string }[] };
+
+const CLIENT_DETAIL_PATH = /^\/admin\/clientes\/[^/]+$/;
 
 const clientLinks: NavItem[] = [
   { type: "link", href: "/dashboard", label: "Dashboard" },
@@ -26,13 +28,27 @@ const clientLinks: NavItem[] = [
   { type: "link", href: "/produto", label: "Produto" },
   { type: "link", href: "/etapa", label: "Etapas" },
   { type: "link", href: "/comunidade", label: "Comunidade" },
+  { type: "link", href: "/calendario", label: "Calendário" },
 ];
 
 const adminLinks: NavItem[] = [
-  { type: "link", href: "/admin/dashboard", label: "Dashboard" },
-  { type: "link", href: "/admin/clientes", label: "Clientes" },
+  {
+    type: "link",
+    href: "/admin/dashboard",
+    label: "Dashboard",
+    isActive: (p) => p === "/admin/dashboard" || CLIENT_DETAIL_PATH.test(p),
+  },
+  { type: "link", href: "/admin/clientes", label: "Clientes", isActive: (p) => p === "/admin/clientes" },
   { type: "link", href: "/admin/produtos", label: "Produtos" },
-  { type: "link", href: "/admin/etapas", label: "Etapas" },
+  {
+    type: "dropdown",
+    label: "Etapas",
+    matchPrefixes: ["/admin/etapas", "/etapa"],
+    items: [
+      { href: "/admin/etapas", label: "Gerenciar Etapas" },
+      { href: "/etapa", label: "Visualizar Etapas" },
+    ],
+  },
   {
     type: "dropdown",
     label: "Trilhas",
@@ -43,11 +59,22 @@ const adminLinks: NavItem[] = [
     ],
   },
   { type: "link", href: "/comunidade", label: "Comunidade" },
+  { type: "link", href: "/calendario", label: "Calendário" },
 ];
 
-function NavLink({ href, label }: { href: string; label: string }) {
+function NavLink({
+  href,
+  label,
+  isActive,
+}: {
+  href: string;
+  label: string;
+  isActive?: (pathname: string) => boolean;
+}) {
   const pathname = usePathname();
-  const active = pathname === href || (href !== "/dashboard" && pathname.startsWith(href));
+  const active = isActive
+    ? isActive(pathname)
+    : pathname === href || (href !== "/dashboard" && pathname.startsWith(href));
   return (
     <Link
       href={href}
@@ -106,7 +133,7 @@ function NavDropdown({
 }
 
 function NavItemRender({ item }: { item: NavItem }) {
-  if (item.type === "link") return <NavLink href={item.href} label={item.label} />;
+  if (item.type === "link") return <NavLink href={item.href} label={item.label} isActive={item.isActive} />;
   return <NavDropdown label={item.label} items={item.items} matchPrefixes={item.matchPrefixes} />;
 }
 
@@ -184,7 +211,7 @@ export function Navbar() {
               <nav className="flex flex-col gap-4 mt-4">
                 {links.flatMap((l) =>
                   l.type === "link"
-                    ? [<NavLink key={l.href} href={l.href} label={l.label} />]
+                    ? [<NavLink key={l.href} href={l.href} label={l.label} isActive={l.isActive} />]
                     : l.items.map((sub) => (
                         <NavLink key={`${l.label}-${sub.href}`} href={sub.href} label={sub.label} />
                       )),
