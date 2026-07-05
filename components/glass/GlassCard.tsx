@@ -2,10 +2,8 @@ import { cn } from "@/lib/utils";
 
 type Variant = "glass" | "soft" | "solid";
 
-interface GlassCardProps {
+interface GlassCardProps extends React.ComponentPropsWithoutRef<"div"> {
   variant?: Variant;
-  className?: string;
-  children: React.ReactNode;
   as?: React.ElementType;
 }
 
@@ -20,8 +18,11 @@ export function GlassCard({
   className,
   children,
   as: Tag = "div",
+  ...props
 }: GlassCardProps) {
   return (
-    <Tag className={cn(variantClass[variant], "p-6", className)}>{children}</Tag>
+    <Tag className={cn(variantClass[variant], "p-6", className)} {...props}>
+      {children}
+    </Tag>
   );
 }

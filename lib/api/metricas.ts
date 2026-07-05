@@ -1,75 +1,73 @@
 import { api } from "./client";
-import type { Paginated } from "./types";
 
-export interface MetricaSemanal {
+export interface MetricOut {
   id: string;
   user_id: string;
-  week_start: string;
-  meetings_held: number;
-  calls_made: number;
-  sales: number;
-  referrals: number;
+  name: string;
+  unit: string;
+  order: number;
   created_at: string;
   updated_at: string;
 }
 
-export interface MetricaInput {
-  week_start: string;
-  meetings_held: number;
-  calls_made: number;
-  sales: number;
-  referrals: number;
-}
-
-export async function listMetricas(params?: {
-  user_id?: string;
-  page?: number;
-  page_size?: number;
-}): Promise<Paginated<MetricaSemanal>> {
-  const { data } = await api.get<Paginated<MetricaSemanal>>("/metricas", { params });
-  return data;
-}
-
-export async function createMetrica(input: MetricaInput): Promise<MetricaSemanal> {
-  const { data } = await api.post<MetricaSemanal>("/metricas", input);
-  return data;
-}
-
-export async function updateMetrica(
-  id: string,
-  input: Partial<MetricaInput>,
-): Promise<MetricaSemanal> {
-  const { data } = await api.patch<MetricaSemanal>(`/metricas/${id}`, input);
-  return data;
-}
-
-export interface DeltaOut {
+export interface EntryOut {
+  metric_id: string;
+  day: string;
   value: number;
-  delta_pct: number | null;
+  updated_at: string;
 }
 
-export interface DashboardResumo {
+export interface SheetOut {
   month: string;
-  meetings_held?: DeltaOut;
-  calls_made?: DeltaOut;
-  sales?: DeltaOut;
-  referrals?: DeltaOut;
+  columns: MetricOut[];
+  days: string[];
+  entries: Record<string, Record<string, number>>;
 }
 
-export async function getDashboardResumo(): Promise<DashboardResumo> {
-  const { data } = await api.get<DashboardResumo>("/dashboard/resumo");
+export interface MetricInput {
+  name: string;
+  unit?: string;
+}
+
+export interface MetricPatch {
+  name?: string;
+  unit?: string;
+  order?: number;
+}
+
+export function getCellValue(sheet: SheetOut, metricId: string, day: string): number | undefined {
+  return sheet.entries[metricId]?.[day];
+}
+
+export async function listMetricColumns(): Promise<MetricOut[]> {
+  const { data } = await api.get<MetricOut[]>("/metricas");
   return data;
 }
 
-export interface SeriePoint {
-  week: string;
-  meetings_held?: number;
-  calls_made?: number;
-  sales?: number;
-  referrals?: number;
+export async function createMetricColumn(input: MetricInput): Promise<MetricOut> {
+  const { data } = await api.post<MetricOut>("/metricas", input);
+  return data;
 }
 
-export async function getDashboardSeries(): Promise<SeriePoint[]> {
-  const { data } = await api.get<{ series: SeriePoint[] }>("/dashboard/series");
-  return data.series;
+export async function updateMetricColumn(id: string, input: MetricPatch): Promise<MetricOut> {
+  const { data } = await api.patch<MetricOut>(`/metricas/${id}`, input);
+  return data;
+}
+
+export async function deleteMetricColumn(id: string): Promise<void> {
+  await api.delete(`/metricas/${id}`);
+}
+
+export async function getSheet(mes?: string): Promise<SheetOut> {
+  const { data } = await api.get<SheetOut>("/metricas/planilha", { params: mes ? { mes } : undefined });
+  return data;
+}
+
+export async function putCell(metricaId: string, dia: string, value: number): Promise<EntryOut> {
+  const { data } = await api.put<EntryOut>(`/metricas/${metricaId}/valores/${dia}`, { value });
+  return data;
+}
+
+export async function deleteCell(metricaId: string, dia: string): Promise<void> {
+  await api.delete(`/metricas/${metricaId}/valores/${dia}`);
 }

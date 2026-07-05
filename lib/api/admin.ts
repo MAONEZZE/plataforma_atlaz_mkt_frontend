@@ -2,40 +2,12 @@ import { api } from "./client";
 import type { Paginated } from "./types";
 import type { UserStage } from "./etapas";
 import type { Produto } from "./produtos";
+import type { SheetOut } from "./metricas";
 
-export interface AdminDashboardLinha {
-  user_id: string;
-  name: string;
-  photo_url: string | null;
-  meetings_held: number;
-  calls_made: number;
-  sales: number;
-  referrals: number;
-  last_metric_at: string | null;
-  product_name?: string | null;
-  product_id?: string | null;
-}
-
-export interface AdminAgregados {
-  meetings_held_total: number;
-  calls_made_total: number;
-  sales_total: number;
-  referrals_total: number;
-  users_with_metric_in_month: number;
-  users_without_metric_in_month: number;
-}
-
-export interface AdminDashboardResponse extends Paginated<AdminDashboardLinha> {
-  aggregates: AdminAgregados;
-}
-
-export async function getAdminDashboard(params?: {
-  mes?: string;
-  busca?: string;
-  page?: number;
-  page_size?: number;
-}): Promise<AdminDashboardResponse> {
-  const { data } = await api.get<AdminDashboardResponse>("/admin/dashboard", { params });
+export async function getClientSheet(userId: string, mes?: string): Promise<SheetOut> {
+  const { data } = await api.get<SheetOut>(`/admin/clients/${userId}/metricas/planilha`, {
+    params: mes ? { mes } : undefined,
+  });
   return data;
 }
 
@@ -159,6 +131,24 @@ export interface ClienteLinha {
   stages: ClienteStage[];
 }
 
+// AdminClientDetailResponse overlaps Usuario's profile fields but is kept as its own
+// type since it's an admin-only response contract (has created_at/stages, no session semantics).
+export interface AdminClientDetailResponse {
+  id: string;
+  name: string;
+  email: string;
+  phone: string | null;
+  linkedin_url: string | null;
+  instagram_username: string | null;
+  description: string | null;
+  photo_url: string | null;
+  role: "cliente" | "admin";
+  product_id: string | null;
+  product_name: string | null;
+  created_at: string;
+  stages: ClienteStage[];
+}
+
 export const adminClientes = {
   create: async (input: ClienteInput): Promise<ClienteCreateResponse> => {
     const { data } = await api.post<ClienteCreateResponse>("/admin/clients", input);
@@ -172,8 +162,42 @@ export const adminClientes = {
     const { data } = await api.get<Paginated<ClienteLinha>>("/admin/clients", { params });
     return data;
   },
+  get: async (id: string): Promise<AdminClientDetailResponse> => {
+    const { data } = await api.get<AdminClientDetailResponse>(`/admin/clients/${id}`);
+    return data;
+  },
   remove: async (id: string): Promise<void> => {
     await api.delete(`/admin/clients/${id}`);
+  },
+};
+
+export interface StageFolder {
+  id: string;
+  title: string;
+  order: number;
+  created_at: string;
+}
+
+export interface StageFolderInput {
+  title: string;
+  order?: number;
+}
+
+export const adminStageFolders = {
+  list: async (): Promise<StageFolder[]> => {
+    const { data } = await api.get<StageFolder[]>("/admin/stage-folders");
+    return data;
+  },
+  create: async (input: StageFolderInput): Promise<StageFolder> => {
+    const { data } = await api.post<StageFolder>("/admin/stage-folders", input);
+    return data;
+  },
+  update: async (id: string, input: Partial<StageFolderInput>): Promise<StageFolder> => {
+    const { data } = await api.patch<StageFolder>(`/admin/stage-folders/${id}`, input);
+    return data;
+  },
+  remove: async (id: string): Promise<void> => {
+    await api.delete(`/admin/stage-folders/${id}`);
   },
 };
 
@@ -181,12 +205,19 @@ export interface Stage {
   id: string;
   text: string;
   title: string | null;
+  folder_id: string | null;
+  order: number;
   created_at: string;
 }
 
+// PATCH /admin/stages/{id} overwrites the whole object — always send the full
+// StageInput (folder_id + order included), never a bare partial, or it silently
+// nulls out the stage's folder/order.
 export interface StageInput {
   text: string;
-  title?: string | null;
+  title: string | null;
+  folder_id: string | null;
+  order: number;
 }
 
 export const adminStages = {
@@ -198,7 +229,7 @@ export const adminStages = {
     const { data } = await api.post<Stage>("/admin/stages", input);
     return data;
   },
-  update: async (id: string, input: Partial<StageInput>): Promise<Stage> => {
+  update: async (id: string, input: StageInput): Promise<Stage> => {
     const { data } = await api.patch<Stage>(`/admin/stages/${id}`, input);
     return data;
   },

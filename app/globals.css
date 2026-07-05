@@ -196,6 +196,30 @@
   }
 }
 
+/* ─── Minimal scrollbar (global, applies to every scrollable element) ── */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--atlaz-accent-soft) transparent;
+}
+
+*::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+*::-webkit-scrollbar-thumb {
+  background-color: var(--atlaz-accent-soft);
+  border-radius: 9999px;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background-color: var(--atlaz-accent);
+}
+
 /* Mobile: reduce blur */
 @media (max-width: 768px) {
   :root {

@@ -7,6 +7,9 @@ export interface UserStage {
   updated_at: string;
   title: string | null;
   text: string | null;
+  folder_id: string | null;
+  folder_title: string | null;
+  order: number;
 }
 
 export async function getMyStages(): Promise<UserStage[]> {

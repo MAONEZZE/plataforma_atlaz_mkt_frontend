@@ -3,7 +3,7 @@
 import { RefreshCw } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
-import { NovaMetricaDialog } from "./NovaMetricaDialog";
+import { ColumnDialog } from "./ColumnDialog";
 import { cn } from "@/lib/utils";
 
 export function DashboardActions() {
@@ -12,10 +12,7 @@ export function DashboardActions() {
 
   async function handleRefresh() {
     setRefreshing(true);
-    await Promise.all([
-      queryClient.invalidateQueries({ queryKey: ["dashboard"] }),
-      queryClient.invalidateQueries({ queryKey: ["metricas"] }),
-    ]);
+    await queryClient.invalidateQueries({ queryKey: ["metricas"] });
     setRefreshing(false);
   }
 
@@ -30,7 +27,7 @@ export function DashboardActions() {
       >
         <RefreshCw className={cn("size-4", refreshing && "animate-spin")} />
       </button>
-      <NovaMetricaDialog />
+      <ColumnDialog mode="create" />
     </div>
   );
 }

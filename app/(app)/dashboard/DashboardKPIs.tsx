@@ -1,60 +1,18 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { TrendingUp, TrendingDown, Minus, Phone, Users, UserPlus } from "lucide-react";
 import { GlassCard } from "@/components/glass/GlassCard";
 import { Skeleton } from "@/components/ui/skeleton";
-import { getDashboardResumo, type DeltaOut } from "@/lib/api/metricas";
+import { getSheet, getCellValue } from "@/lib/api/metricas";
 
-function DeltaBadge({ delta_pct }: { delta_pct: number | null }) {
-  if (delta_pct === null) return null;
-  if (delta_pct > 0)
-    return (
-      <span className="flex items-center gap-0.5 text-xs font-medium text-success">
-        <TrendingUp className="size-3" />
-        {delta_pct.toFixed(1)}%
-      </span>
-    );
-  if (delta_pct < 0)
-    return (
-      <span className="flex items-center gap-0.5 text-xs font-medium text-danger">
-        <TrendingDown className="size-3" />
-        {Math.abs(delta_pct).toFixed(1)}%
-      </span>
-    );
-  return (
-    <span className="flex items-center gap-0.5 text-xs text-muted-foreground">
-      <Minus className="size-3" />
-      0%
-    </span>
-  );
+interface DashboardKPIsProps {
+  mes: string;
 }
 
-interface KPICardProps {
-  label: string;
-  delta: DeltaOut | null | undefined;
-  icon: React.ReactNode;
-}
-
-function KPICard({ label, delta, icon }: KPICardProps) {
-  const value = delta?.value ?? 0;
-  const deltaPct = delta?.delta_pct ?? null;
-  return (
-    <GlassCard variant="soft" className="flex flex-col gap-3">
-      <div className="flex items-center justify-between">
-        <span className="text-sm text-muted-foreground">{label}</span>
-        <span className="text-primary opacity-70">{icon}</span>
-      </div>
-      <p className="text-3xl font-bold text-foreground">{value.toLocaleString("pt-BR")}</p>
-      <DeltaBadge delta_pct={deltaPct} />
-    </GlassCard>
-  );
-}
-
-export function DashboardKPIs() {
+export function DashboardKPIs({ mes }: DashboardKPIsProps) {
   const { data, isLoading, isError, refetch } = useQuery({
-    queryKey: ["dashboard", "resumo"],
-    queryFn: getDashboardResumo,
+    queryKey: ["metricas", "planilha", mes],
+    queryFn: () => getSheet(mes),
   });
 
   if (isLoading) {
@@ -74,16 +32,24 @@ export function DashboardKPIs() {
     );
   }
 
-  const cards = [
-    { label: "Reunião Realizada", delta: data.meetings_held, icon: <Phone className="size-5" /> },
-    { label: "Ligação Realizada", delta: data.calls_made, icon: <TrendingUp className="size-5" /> },
-    { label: "Vendas", delta: data.sales, icon: <Users className="size-5" /> },
-    { label: "Indicações", delta: data.referrals, icon: <UserPlus className="size-5" /> },
-  ];
+  if (data.columns.length === 0) return null;
+
+  const cards = data.columns.map((c) => {
+    const total = data.days.reduce((sum, day) => sum + (getCellValue(data, c.id, day) ?? 0), 0);
+    return { id: c.id, label: c.name, unit: c.unit, total };
+  });
 
   return (
     <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-      {cards.map((c) => <KPICard key={c.label} {...c} />)}
+      {cards.map((c) => (
+        <GlassCard key={c.id} variant="soft" className="flex flex-col gap-3">
+          <span className="text-sm text-muted-foreground">{c.label}</span>
+          <p className="text-3xl font-bold text-foreground">
+            {c.total.toLocaleString("pt-BR")}
+            <span className="text-sm font-normal text-muted-foreground ml-1">{c.unit}</span>
+          </p>
+        </GlassCard>
+      ))}
     </div>
   );
 }

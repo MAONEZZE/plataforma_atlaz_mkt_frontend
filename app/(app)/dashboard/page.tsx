@@ -1,15 +1,15 @@
 import { redirect } from "next/navigation";
 import axios from "axios";
-import { DashboardActions } from "./DashboardActions";
-import { DashboardKPIs } from "./DashboardKPIs";
-import { DashboardChart } from "./DashboardChart";
-import { DashboardTable } from "./DashboardTable";
 import { format } from "date-fns";
-import { ptBR } from "date-fns/locale";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import type { Usuario } from "@/lib/api/types";
+import { DashboardContent } from "./DashboardContent";
 
-export default async function DashboardPage() {
+export default async function DashboardPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ mes?: string }>;
+}) {
   const supabase = await createSupabaseServerClient();
   const {
     data: { session },
@@ -27,20 +27,10 @@ export default async function DashboardPage() {
       // 401/403/etc handled by (app)/layout.tsx — fall through
     }
   }
-  if (role === "admin") redirect("/admin/dashboard");
-  const mes = format(new Date(), "MMMM 'de' yyyy", { locale: ptBR });
-  return (
-    <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-semibold">Dashboard</h1>
-          <p className="text-sm text-muted-foreground mt-0.5 capitalize">Suas métricas de {mes}</p>
-        </div>
-        <DashboardActions />
-      </div>
-      <DashboardKPIs />
-      <DashboardChart />
-      <DashboardTable />
-    </div>
-  );
+  if (role === "admin") redirect("/admin/clientes");
+
+  const { mes: mesParam } = await searchParams;
+  const mes = mesParam ?? format(new Date(), "yyyy-MM");
+
+  return <DashboardContent initialMes={mes} />;
 }

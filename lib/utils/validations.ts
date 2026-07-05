@@ -8,15 +8,13 @@ export const loginSchema = z.object({
 
 export type LoginInput = z.infer<typeof loginSchema>;
 
-export const metricaSchema = z.object({
-  week_start: z.string().min(1, "Selecione a semana."),
-  meetings_held: z.number().int().min(0, "Não pode ser negativo."),
-  calls_made: z.number().int().min(0, "Não pode ser negativo."),
-  sales: z.number().int().min(0, "Não pode ser negativo."),
-  referrals: z.number().int().min(0, "Não pode ser negativo."),
+export const columnSchema = z.object({
+  name: z.string().min(1, "Nome obrigatório."),
 });
 
-export type MetricaFormInput = z.infer<typeof metricaSchema>;
+export type ColumnFormInput = z.infer<typeof columnSchema>;
+
+export const cellValueSchema = z.number().int().min(0, "Não pode ser negativo.");
 
 export const cadastroClienteSchema = z.object({
   name: z.string().min(1, "Nome obrigatório."),

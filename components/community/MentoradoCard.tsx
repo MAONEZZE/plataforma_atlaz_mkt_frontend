@@ -24,7 +24,7 @@ interface MentoradoCardProps {
   mentorado: MentoradoPublico;
 }
 
-function initials(name: string): string {
+export function initials(name: string): string {
   return name
     .split(" ")
     .slice(0, 2)
@@ -61,7 +61,7 @@ function LinkedInIcon({ className }: { className?: string }) {
   );
 }
 
-function SocialLinks({
+export function SocialLinks({
   linkedin_url,
   instagram_username,
   name,
