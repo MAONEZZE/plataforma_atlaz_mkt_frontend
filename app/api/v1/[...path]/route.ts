@@ -3,7 +3,6 @@ import { type NextRequest, NextResponse } from "next/server";
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 export const maxDuration = 60;
-const urls = ["https://hub-api.akeel.com.br", "http://localhost:8000"];
 
 const HOP_BY_HOP = new Set([
   "connection",
@@ -17,7 +16,7 @@ const HOP_BY_HOP = new Set([
 ]);
 
 async function proxy(req: NextRequest, params: { path: string[] }) {
-  const apiBase = urls[0];
+  const apiBase = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
   const pathStr = params.path.join("/");
   const search = req.nextUrl.search;
   const target = `${apiBase}/api/v1/${pathStr}${search}`;
