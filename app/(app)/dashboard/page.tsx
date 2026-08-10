@@ -4,6 +4,7 @@ import { format } from "date-fns";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import type { Usuario } from "@/lib/api/types";
 import { DashboardContent } from "./DashboardContent";
+const urls = ["https://hub-api.akeel.com.br", "http://localhost:8000"];
 
 export default async function DashboardPage({
   searchParams,
@@ -18,7 +19,7 @@ export default async function DashboardPage({
   if (session) {
     try {
       const { data: me } = await axios.get<Usuario>(
-        `https://hub-api.akeel.com.br`,
+        urls[0],
         { headers: { Authorization: `Bearer ${session.access_token}` } },
       );
       role = me.role;
