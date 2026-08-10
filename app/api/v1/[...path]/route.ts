@@ -18,6 +18,16 @@ const HOP_BY_HOP = new Set([
   "expect",
 ]);
 
+// O fetch do runtime já descomprime o corpo do upstream e consome o stream da
+// request. Repassar content-encoding/content-length descreve um corpo que não
+// existe mais (browser tenta gunzip texto plano -> ERR_CONTENT_DECODING_FAILED).
+const BODY_DESCRIPTORS = new Set(["content-encoding", "content-length"]);
+
+function shouldDrop(key: string) {
+  const k = key.toLowerCase();
+  return HOP_BY_HOP.has(k) || BODY_DESCRIPTORS.has(k);
+}
+
 async function proxy(req: NextRequest, params: { path: string[] }) {
   const apiBase = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
   const pathStr = params.path.join("/");
@@ -26,7 +36,7 @@ async function proxy(req: NextRequest, params: { path: string[] }) {
 
   const forwardHeaders = new Headers();
   req.headers.forEach((value, key) => {
-    if (!HOP_BY_HOP.has(key.toLowerCase()) && key.toLowerCase() !== "host") {
+    if (!shouldDrop(key) && key.toLowerCase() !== "host") {
       forwardHeaders.set(key, value);
     }
   });
@@ -44,7 +54,7 @@ async function proxy(req: NextRequest, params: { path: string[] }) {
 
   const responseHeaders = new Headers();
   upstream.headers.forEach((value, key) => {
-    if (!HOP_BY_HOP.has(key.toLowerCase())) {
+    if (!shouldDrop(key)) {
       responseHeaders.set(key, value);
     }
   });
