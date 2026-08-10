@@ -16,7 +16,7 @@ const HOP_BY_HOP = new Set([
 ]);
 
 async function proxy(req: NextRequest, params: { path: string[] }) {
-  const apiBase = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+  const apiBase = "https://hub-api.akeel.com.br";
   const pathStr = params.path.join("/");
   const search = req.nextUrl.search;
   const target = `${apiBase}/api/v1/${pathStr}${search}`;

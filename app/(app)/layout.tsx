@@ -8,7 +8,7 @@ import type { Usuario } from "@/lib/api/types";
 async function fetchMe(accessToken: string): Promise<Usuario | null> {
   try {
     const { data } = await axios.get<Usuario>(
-      `${process.env.NEXT_PUBLIC_API_URL ?? ""}/api/v1/me`,
+      `https://hub-api.akeel.com.br`,
       { headers: { Authorization: `Bearer ${accessToken}` } },
     );
     return data;

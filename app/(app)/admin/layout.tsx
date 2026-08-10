@@ -11,7 +11,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   if (!session) redirect("/login");
 
   const { data: me } = await axios.get<Usuario>(
-    `${process.env.NEXT_PUBLIC_API_URL ?? ""}/api/v1/me`,
+    `https://hub-api.akeel.com.br`,
     { headers: { Authorization: `Bearer ${session.access_token}` } },
   );
 

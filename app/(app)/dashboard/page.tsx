@@ -18,7 +18,7 @@ export default async function DashboardPage({
   if (session) {
     try {
       const { data: me } = await axios.get<Usuario>(
-        `${process.env.NEXT_PUBLIC_API_URL ?? ""}/api/v1/me`,
+        `https://hub-api.akeel.com.br`,
         { headers: { Authorization: `Bearer ${session.access_token}` } },
       );
       role = me.role;
