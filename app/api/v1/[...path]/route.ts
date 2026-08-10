@@ -13,6 +13,9 @@ const HOP_BY_HOP = new Set([
   "trailers",
   "transfer-encoding",
   "upgrade",
+  // "expect" é per-hop: se repassado, o upstream responde 100 Continue e o
+  // runtime do Worker expõe esse status, quebrando a construção da resposta
+  "expect",
 ]);
 
 async function proxy(req: NextRequest, params: { path: string[] }) {
