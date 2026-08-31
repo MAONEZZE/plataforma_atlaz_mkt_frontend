@@ -11,6 +11,7 @@ import { GlassCard } from "@/components/glass/GlassCard";
 import { EmptyState } from "@/components/data/EmptyState";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AdminClientProfileHeader } from "@/components/admin/AdminClientProfileHeader";
+import { ClientEventsCalendarCard } from "@/components/calendar/ClientEventsCalendarCard";
 import { MonthPicker } from "@/components/forms/MonthPicker";
 import { PlanilhaView } from "@/components/metrics/PlanilhaView";
 import { MetricsLineChart } from "@/components/metrics/MetricsLineChart";
@@ -123,8 +124,14 @@ export function ClientDetailView({ id }: ClientDetailViewProps) {
         <>
           <AdminClientProfileHeader client={client} onEdit={() => setEditing(true)} />
           <StagesSection id={id} />
+          <ClientEventsCalendarCard clientId={id} />
           <MetricsSection id={id} />
-          {editing && <ClientManageModal client={client} onClose={() => setEditing(false)} />}
+          <ClientManageModal
+            open={editing}
+            onOpenChange={setEditing}
+            client={client}
+            onSuccess={() => refetch()}
+          />
         </>
       )}
     </div>

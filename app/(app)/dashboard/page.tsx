@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import axios from "axios";
 import { format } from "date-fns";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { apiBaseUrl } from "@/lib/utils";
 import type { Usuario } from "@/lib/api/types";
 import { DashboardContent } from "./DashboardContent";
 
@@ -18,7 +19,7 @@ export default async function DashboardPage({
   if (session) {
     try {
       const { data: me } = await axios.get<Usuario>(
-        `${process.env.NEXT_PUBLIC_API_URL ?? ""}/api/v1/me`,
+        `${apiBaseUrl()}/api/v1/me`,
         { headers: { Authorization: `Bearer ${session.access_token}` } },
       );
       role = me.role;

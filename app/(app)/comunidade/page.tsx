@@ -7,13 +7,7 @@ import { listComunidade } from "@/lib/api/comunidade";
 import { MentoradoCard } from "@/components/community/MentoradoCard";
 import { EmptyState } from "@/components/data/EmptyState";
 import { Skeleton } from "@/components/ui/skeleton";
-import {
-  Pagination,
-  PaginationContent,
-  PaginationItem,
-  PaginationNext,
-  PaginationPrevious,
-} from "@/components/ui/pagination";
+import { Pagination } from "@/components/data/Pagination";
 
 const PAGE_SIZE = 24;
 
@@ -31,8 +25,8 @@ export default function ComunidadePage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-semibold">Comunidade</h1>
-        <p className="text-sm text-muted-foreground">Conheça os outros mentorados da Atlaz</p>
+        <h1 className="text-2xl font-bold tracking-tight">Comunidade</h1>
+        <p className="text-sm text-muted-foreground">Conheça os outros mentorados da akeel</p>
       </div>
 
       {isLoading && (
@@ -66,31 +60,7 @@ export default function ComunidadePage() {
             ))}
           </div>
 
-          {totalPages > 1 && (
-            <Pagination>
-              <PaginationContent>
-                <PaginationItem>
-                  <PaginationPrevious
-                    onClick={() => setPage((p) => Math.max(1, p - 1))}
-                    aria-disabled={page <= 1}
-                    className={page <= 1 ? "pointer-events-none opacity-40" : "cursor-pointer"}
-                  />
-                </PaginationItem>
-                <PaginationItem>
-                  <span className="text-sm text-muted-foreground px-3">
-                    {page} / {totalPages}
-                  </span>
-                </PaginationItem>
-                <PaginationItem>
-                  <PaginationNext
-                    onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                    aria-disabled={page >= totalPages}
-                    className={page >= totalPages ? "pointer-events-none opacity-40" : "cursor-pointer"}
-                  />
-                </PaginationItem>
-              </PaginationContent>
-            </Pagination>
-          )}
+          <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
         </>
       )}
     </div>

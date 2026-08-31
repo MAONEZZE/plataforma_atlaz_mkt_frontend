@@ -163,7 +163,7 @@ export default function AulaPage() {
         {/* Title + progress toggle */}
         <div className="space-y-3 flex justify-between">
           <div>
-            <h1 className="text-3xl font-bold">{aula.title}</h1>
+            <h1 className="text-3xl font-bold tracking-tight">{aula.title}</h1>
             {aula.duration_minutes && (
               <p className="mt-3 flex items-center gap-3 text-sm text-muted-foreground">
                 <Clock className="size-4" />

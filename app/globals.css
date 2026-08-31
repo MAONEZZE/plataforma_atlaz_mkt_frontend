@@ -2,204 +2,372 @@
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 
-/* Dark mode via prefers-color-scheme (sem toggle manual no MVP) */
-@custom-variant dark (@media (prefers-color-scheme: dark));
+/* Dark mode por CLASSE (next-themes escreve .dark no <html>). */
+@custom-variant dark (&:where(.dark, .dark *));
 
-/* ─── Atlaz Theme Tokens ──────────────────────────────────────────── */
+/* ════════════════════════════════════════════════════════════════════
+   PALETA DE MARCA — extraída dos SVGs em public/logos/
+   Todos os tokens são tripletas HSL com uma casa decimal: arredondar
+   para inteiro desloca o hex da marca.
+   ══════════════════════════════════════════════════════════════════ */
 :root {
-  /* Page */
-  --page-bg: #FAF9F7;
+  /* Cores da marca (constantes nos dois temas) */
+  --brand-ink: 192.5 41.4% 11.4%; /* #112429 — teal profundo do logo */
+  --brand-accent: 99.5 63.8% 63.1%; /* #8EDD65 — lime do logo */
+  --brand-offwhite: 160 15.8% 96.3%; /* #F4F7F6 */
+  --brand-bg-dark: 192.5 41.4% 11.4%; /* = ink; fundo da sidebar */
 
-  /* Glass */
-  --glass-bg: rgba(255, 253, 250, 0.55);
-  --glass-border: rgba(255, 253, 250, 0.80);
+  /* ── Escala neutra própria, tingida no hue da marca (192.5) ──────
+     Tons de TEXTO: 900–500 (L ≤ 38%, todos ≥ 4.5:1 sobre --background).
+     Tons 400–100 são para bordas e superfícies, NÃO para texto.        */
+  --ink-900: 192.5 41.4% 11.4%; /* #112429 — 14.91:1 sobre bg claro */
+  --ink-800: 192.5 32% 18%; /* #1F363D — 11.9:1 */
+  --ink-700: 192.5 26% 24%; /* #2D464D —  9.31:1 */
+  --ink-600: 192.5 20% 31%; /* #3F585F —  7.04:1 */
+  --ink-500: 192.5 16% 38%; /* #516A70 —  5.35:1 — limite p/ texto */
+  --ink-400: 192.5 14% 52%; /* #738F96 —  3.20:1 — só borda/ícone */
+  --ink-300: 192.5 14% 68%; /* #A2B4B9 — superfície/borda */
+  --ink-200: 192.5 18% 86%; /* #D5DFE2 — hairline */
+  --ink-100: 192.5 22% 94%; /* #ECF2F3 — hover/muted */
+
+  --surface: 192.5 20% 99%; /* #FCFDFD — cards */
+  --surface-2: 192.5 24% 96.5%; /* #F4F7F8 — página */
+
+  /* ── Tokens semânticos — TEMA CLARO ───────────────────────────── */
+  --background: var(--surface-2);
+  --foreground: var(--ink-900); /* 14.91:1 sobre --background */
+  --card: var(--surface);
+  --card-foreground: var(--ink-900); /* 15.75:1 sobre --card */
+  --popover: var(--surface);
+  --popover-foreground: var(--ink-900); /* 15.75:1 */
+
+  /* O lime da marca é cor de PREENCHIMENTO, não de texto: como texto sobre
+     fundo claro dá 1.54:1. Então --primary é o verde escuro da marca (que
+     `text-primary` usa em ~25 telas) e o lime fica reservado ao item ativo
+     da sidebar (--sidebar-primary), onde tem 9.69:1. */
+  --primary: 99.5 62% 26%; /* #356B19 — 5.97:1 sobre --background */
+  --primary-foreground: 0 0% 100%; /* 6.42:1 sobre --primary */
+  --secondary: var(--ink-100);
+  --secondary-foreground: var(--ink-800); /* 10.9:1 */
+  --muted: var(--ink-100);
+  --muted-foreground: var(--ink-500); /* 5.35:1 sobre --background */
+  --accent: var(--ink-100); /* superfície de hover */
+  --accent-foreground: var(--ink-900); /* 13.9:1 */
+
+  /* Mesmo verde do --primary, exposto para .eyebrow e realces de acento. */
+  --accent-ink: var(--primary); /* 5.97:1 sobre --background */
+
+  --destructive: 8 72% 45%; /* #C53620 — 4.97:1 sobre --background */
+  --destructive-foreground: 0 0% 100%;
+
+  /* Cautela: distinta do destrutivo e do primary (cancelar/remover). */
+  --warn: 32 88% 33%; /* #9E590A — 5.02:1 sobre --background */
+  --warn-foreground: 0 0% 100%;
+
+  --border: var(--ink-200);
+  --input: var(--ink-200);
+  --ring: var(--accent-ink); /* 5.97:1 — visível sobre claro */
+
+  /* ── Status como pares bg/fg ──────────────────────────────────── */
+  --status-bg-alpha: 1;
+  --status-success-bg: 142 45% 92%;
+  --status-success-fg: 142 62% 26%; /* 5.72:1 sobre o próprio bg */
+  --status-danger-bg: 8 70% 94%;
+  --status-danger-fg: 8 68% 38%; /* 5.88:1 */
+  --status-pending-bg: 32 80% 92%;
+  --status-pending-fg: 32 80% 29%; /* 5.85:1 */
+  --status-neutral-bg: 192.5 20% 93%;
+  --status-neutral-fg: 192.5 20% 31%; /* 6.53:1 */
+
+  /* ── SIDEBAR — sempre escura, valores IDÊNTICOS em :root e .dark ── */
+  --sidebar: var(--brand-bg-dark);
+  --sidebar-foreground: var(--brand-offwhite); /* 14.89:1 */
+  --sidebar-primary: var(--brand-accent); /* fundo do item ativo */
+  --sidebar-primary-foreground: var(--brand-ink); /* 9.69:1 */
+  --sidebar-accent: 192.5 30% 19%; /* hover — offwhite 11.29:1 */
+  --sidebar-accent-foreground: var(--brand-offwhite);
+  --sidebar-border: 192.5 25% 22%; /* hairline */
+  --sidebar-ring: var(--brand-accent); /* 11.27:1 sobre a sidebar */
+
+  /* ── Raio ─────────────────────────────────────────────────────── */
+  --radius: 0.6875rem; /* 11px */
+
+  /* ── Sombras tingidas com a tinta da marca, não preto puro ────── */
+  --shadow-tint: var(--brand-ink);
+  --shadow-sm: 0 1px 2px 0 hsl(var(--shadow-tint) / 0.06),
+    0 1px 3px 0 hsl(var(--shadow-tint) / 0.08);
+  --shadow: 0 4px 12px -2px hsl(var(--shadow-tint) / 0.1),
+    0 2px 6px -2px hsl(var(--shadow-tint) / 0.07);
+  --shadow-pop: 0 18px 40px -12px hsl(var(--shadow-tint) / 0.24),
+    0 8px 16px -8px hsl(var(--shadow-tint) / 0.16);
+
+  /* ── Glass (identidade já existente do projeto, retingida) ────── */
+  --glass-bg: 192.5 24% 99% / 0.55;
+  --glass-border: 192.5 24% 100% / 0.8;
   --glass-blur: 24px;
   --glass-saturate: 180%;
-  --glass-bg-soft: rgba(255, 253, 250, 0.40);
-  --glass-border-soft: rgba(255, 253, 250, 0.60);
+  --glass-bg-soft: 192.5 24% 99% / 0.4;
+  --glass-border-soft: 192.5 24% 100% / 0.6;
   --glass-blur-soft: 16px;
+  --surface-solid: var(--surface);
+  --surface-solid-elevated: var(--ink-100);
 
-  /* Surfaces */
-  --surface-solid: #FFFFFF;
-  --surface-solid-elevated: #F2EDE8;
-
-  /* Text */
-  --text-primary: #1A1410;
-  --text-secondary: rgba(26, 20, 16, 0.65);
-  --text-tertiary: rgba(26, 20, 16, 0.45);
-
-  /* Accent (Atlaz warm taupe) */
-  --atlaz-accent: #8B6B55;
-  --atlaz-accent-soft: rgba(139, 107, 85, 0.15);
-
-  /* Semantic */
-  --success: #4A7A45;
-  --warning: #B8820A;
-  --danger: #C4392A;
-
-  /* shadcn tokens remapped to Atlaz palette */
-  --background: #FAF9F7;
-  --foreground: #1A1410;
-  --card: #FFFFFF;
-  --card-foreground: #1A1410;
-  --popover: rgba(255, 253, 250, 0.55);
-  --popover-foreground: #1A1410;
-  --primary: #8B6B55;
-  --primary-foreground: #FFFFFF;
-  --secondary: #F2EDE8;
-  --secondary-foreground: #1A1410;
-  --muted: #F2EDE8;
-  --muted-foreground: rgba(26, 20, 16, 0.65);
-  --accent: rgba(139, 107, 85, 0.10);
-  --accent-foreground: #8B6B55;
-  --destructive: #C4392A;
-  --destructive-foreground: #FFFFFF;
-  --border: rgba(26, 20, 16, 0.12);
-  --input: rgba(26, 20, 16, 0.08);
-  --ring: #8B6B55;
-  --radius: 0.75rem;
-
-  /* Recharts series colors */
-  --chart-1: #8B6B55;
-  --chart-2: #4A7A45;
-  --chart-3: #B8820A;
-  --chart-4: #B8A898;
-  --chart-5: #6B8BA4;
+  /* ── Séries de gráfico (cor resolvida: Recharts lê via var()) ─── */
+  --chart-1: #8edd65;
+  --chart-2: #2f6812;
+  --chart-3: #f5a447;
+  --chart-4: #477885;
+  --chart-5: #a2b4b9;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --page-bg: #0F0C0A;
-    --glass-bg: rgba(26, 21, 18, 0.55);
-    --glass-border: rgba(255, 253, 250, 0.10);
-    --glass-blur: 28px;
-    --glass-bg-soft: rgba(34, 29, 25, 0.50);
-    --glass-border-soft: rgba(255, 253, 250, 0.08);
-    --glass-blur-soft: 18px;
-    --surface-solid: #1A1512;
-    --surface-solid-elevated: #221D19;
-    --text-primary: #FAF9F7;
-    --text-secondary: rgba(250, 249, 247, 0.70);
-    --text-tertiary: rgba(250, 249, 247, 0.50);
-    --atlaz-accent: #C4A898;
-    --atlaz-accent-soft: rgba(196, 168, 152, 0.20);
-    --success: #6ABF63;
-    --warning: #E6A82A;
-    --danger: #E86050;
+/* ════════════════════════════════════════════════════════════════════
+   TEMA ESCURO — redefine APENAS o que muda.
+   Nunca declare uma var de fonte aqui: a fonte trocaria com o tema.
+   ══════════════════════════════════════════════════════════════════ */
+.dark {
+  --surface: 192.5 33% 12%; /* #152429 */
+  --surface-2: 192.5 40% 8%; /* #0C191D */
 
-    --background: #0F0C0A;
-    --foreground: #FAF9F7;
-    --card: #1A1512;
-    --card-foreground: #FAF9F7;
-    --popover: rgba(26, 21, 18, 0.55);
-    --popover-foreground: #FAF9F7;
-    --primary: #C4A898;
-    --primary-foreground: #0F0C0A;
-    --secondary: #221D19;
-    --secondary-foreground: #FAF9F7;
-    --muted: #221D19;
-    --muted-foreground: rgba(250, 249, 247, 0.70);
-    --accent: rgba(196, 168, 152, 0.15);
-    --accent-foreground: #C4A898;
-    --destructive: #E86050;
-    --destructive-foreground: #0F0C0A;
-    --border: rgba(255, 253, 250, 0.10);
-    --input: rgba(255, 253, 250, 0.08);
-    --ring: #C4A898;
+  --background: var(--surface-2);
+  --foreground: var(--brand-offwhite); /* 16.62:1 sobre --background */
+  --card: var(--surface);
+  --card-foreground: var(--brand-offwhite); /* 14.80:1 sobre --card */
+  --popover: var(--surface);
+  --popover-foreground: var(--brand-offwhite); /* 14.80:1 */
 
-    --chart-1: #C4A898;
-    --chart-2: #6ABF63;
-    --chart-3: #E6A82A;
-    --chart-4: #D4C4B8;
-    --chart-5: #8AAFC4;
-  }
+  --primary: 99.5 64% 66%; /* #97E071 — 11.27:1 sobre --background */
+  --primary-foreground: var(--brand-ink); /* 10.10:1 sobre --primary */
+  --secondary: 192.5 30% 19%;
+  --secondary-foreground: var(--brand-offwhite); /* 11.29:1 */
+  --muted: 192.5 30% 19%;
+  --muted-foreground: var(--ink-300); /* 8.33:1 sobre --background */
+  --accent: 192.5 30% 19%;
+  --accent-foreground: var(--brand-offwhite); /* 11.29:1 */
+
+  --accent-ink: var(--primary); /* 11.27:1 sobre --background */
+
+  --destructive: 8 80% 62%; /* #EC6551 — 5.58:1 sobre --background */
+  --destructive-foreground: var(--brand-ink);
+
+  --warn: 32 90% 62%; /* #F5A447 — 8.77:1 sobre --background */
+  --warn-foreground: var(--brand-ink);
+
+  --border: 192.5 25% 22%;
+  --input: 192.5 25% 22%;
+  --ring: var(--primary); /* 11.27:1 */
+
+  /* Status: no escuro o fundo vira alpha e o texto sobe p/ o tom 300. */
+  --status-bg-alpha: 0.35;
+  --status-success-bg: 142 62% 26%;
+  --status-success-fg: 142 55% 68%; /* 9.48:1 sobre --card */
+  --status-danger-bg: 8 68% 38%;
+  --status-danger-fg: 8 72% 70%; /* 6.40:1 sobre --card */
+  --status-pending-bg: 32 80% 29%;
+  --status-pending-fg: 38 85% 66%; /* 9.22:1 sobre --card */
+  --status-neutral-bg: 192.5 25% 22%;
+  --status-neutral-fg: var(--ink-300); /* 7.42:1 sobre --card */
+
+  /* Sidebar: MESMOS valores do :root — ela é escura nos dois temas. */
+  --sidebar: var(--brand-bg-dark);
+  --sidebar-foreground: var(--brand-offwhite);
+  --sidebar-primary: var(--brand-accent);
+  --sidebar-primary-foreground: var(--brand-ink);
+  --sidebar-accent: 192.5 30% 19%;
+  --sidebar-accent-foreground: var(--brand-offwhite);
+  --sidebar-border: 192.5 25% 22%;
+  --sidebar-ring: var(--brand-accent);
+
+  --shadow-tint: 192.5 60% 2%;
+  --shadow-sm: 0 1px 2px 0 hsl(var(--shadow-tint) / 0.4),
+    0 1px 3px 0 hsl(var(--shadow-tint) / 0.5);
+  --shadow: 0 4px 12px -2px hsl(var(--shadow-tint) / 0.55),
+    0 2px 6px -2px hsl(var(--shadow-tint) / 0.4);
+  --shadow-pop: 0 18px 40px -12px hsl(var(--shadow-tint) / 0.7),
+    0 8px 16px -8px hsl(var(--shadow-tint) / 0.5);
+
+  --glass-bg: 192.5 33% 12% / 0.55;
+  --glass-border: 160 16% 96% / 0.1;
+  --glass-blur: 28px;
+  --glass-bg-soft: 192.5 30% 15% / 0.5;
+  --glass-border-soft: 160 16% 96% / 0.08;
+  --glass-blur-soft: 18px;
+  --surface-solid: var(--surface);
+  --surface-solid-elevated: 192.5 30% 19%;
+
+  --chart-1: #8edd65;
+  --chart-2: #81daa1;
+  --chart-3: #f5a447;
+  --chart-4: #a2b4b9;
+  --chart-5: #477885;
 }
 
-/* ─── Tailwind v4 custom theme tokens ────────────────────────────── */
+/* ════════════════════════════════════════════════════════════════════
+   Tokens Tailwind v4 — envolve cada tripleta em hsl()
+   ══════════════════════════════════════════════════════════════════ */
 @theme inline {
-  --font-sans: var(--font-sans);
-  --font-mono: var(--font-geist-mono);
+  /* Sans = corpo (fonte principal); display = títulos. */
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-montserrat), var(--font-inter), ui-sans-serif, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, monospace;
 
-  /* shadcn base */
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --color-card: var(--card);
-  --color-card-foreground: var(--card-foreground);
-  --color-popover: var(--popover);
-  --color-popover-foreground: var(--popover-foreground);
-  --color-primary: var(--primary);
-  --color-primary-foreground: var(--primary-foreground);
-  --color-secondary: var(--secondary);
-  --color-secondary-foreground: var(--secondary-foreground);
-  --color-muted: var(--muted);
-  --color-muted-foreground: var(--muted-foreground);
-  --color-accent: var(--accent);
-  --color-accent-foreground: var(--accent-foreground);
-  --color-destructive: var(--destructive);
-  --color-border: var(--border);
-  --color-input: var(--input);
-  --color-ring: var(--ring);
-  --radius-sm: calc(var(--radius) * 0.6);
-  --radius-md: calc(var(--radius) * 0.8);
-  --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) * 1.4);
-  --radius-2xl: calc(var(--radius) * 1.8);
+  --color-background: hsl(var(--background));
+  --color-foreground: hsl(var(--foreground));
+  --color-card: hsl(var(--card));
+  --color-card-foreground: hsl(var(--card-foreground));
+  --color-popover: hsl(var(--popover));
+  --color-popover-foreground: hsl(var(--popover-foreground));
+  --color-primary: hsl(var(--primary));
+  --color-primary-foreground: hsl(var(--primary-foreground));
+  --color-secondary: hsl(var(--secondary));
+  --color-secondary-foreground: hsl(var(--secondary-foreground));
+  --color-muted: hsl(var(--muted));
+  --color-muted-foreground: hsl(var(--muted-foreground));
+  --color-accent: hsl(var(--accent));
+  --color-accent-foreground: hsl(var(--accent-foreground));
+  --color-accent-ink: hsl(var(--accent-ink));
+  --color-destructive: hsl(var(--destructive));
+  --color-destructive-foreground: hsl(var(--destructive-foreground));
+  --color-warn: hsl(var(--warn));
+  --color-warn-foreground: hsl(var(--warn-foreground));
+  --color-border: hsl(var(--border));
+  --color-input: hsl(var(--input));
+  --color-ring: hsl(var(--ring));
 
-  /* Atlaz-specific */
-  --color-atlaz-accent: var(--atlaz-accent);
-  --color-atlaz-accent-soft: var(--atlaz-accent-soft);
-  --color-success: var(--success);
-  --color-warning: var(--warning);
-  --color-danger: var(--danger);
-  --color-surface-solid: var(--surface-solid);
-  --color-surface-elevated: var(--surface-solid-elevated);
-  --color-text-primary: var(--text-primary);
-  --color-text-secondary: var(--text-secondary);
-  --color-text-tertiary: var(--text-tertiary);
-  --color-page-bg: var(--page-bg);
+  /* Sidebar */
+  --color-sidebar: hsl(var(--sidebar));
+  --color-sidebar-foreground: hsl(var(--sidebar-foreground));
+  --color-sidebar-primary: hsl(var(--sidebar-primary));
+  --color-sidebar-primary-foreground: hsl(var(--sidebar-primary-foreground));
+  --color-sidebar-accent: hsl(var(--sidebar-accent));
+  --color-sidebar-accent-foreground: hsl(var(--sidebar-accent-foreground));
+  --color-sidebar-border: hsl(var(--sidebar-border));
+  --color-sidebar-ring: hsl(var(--sidebar-ring));
 
-  /* Charts */
+  /* Status — o alpha do fundo troca com o tema via --status-bg-alpha */
+  --color-status-success-bg: hsl(var(--status-success-bg) / var(--status-bg-alpha));
+  --color-status-success-fg: hsl(var(--status-success-fg));
+  --color-status-danger-bg: hsl(var(--status-danger-bg) / var(--status-bg-alpha));
+  --color-status-danger-fg: hsl(var(--status-danger-fg));
+  --color-status-pending-bg: hsl(var(--status-pending-bg) / var(--status-bg-alpha));
+  --color-status-pending-fg: hsl(var(--status-pending-fg));
+  --color-status-neutral-bg: hsl(var(--status-neutral-bg) / var(--status-bg-alpha));
+  --color-status-neutral-fg: hsl(var(--status-neutral-fg));
+
+  /* Aliases mantidos: `text-danger`, `bg-success`, `bg-warning` já são
+     usados em ~90 lugares do app. */
+  --color-danger: hsl(var(--destructive));
+  --color-success: hsl(var(--status-success-fg));
+  --color-warning: hsl(var(--warn));
+  --color-surface-solid: hsl(var(--surface-solid));
+  --color-surface-elevated: hsl(var(--surface-solid-elevated));
+
+  /* Escala neutra exposta */
+  --color-ink-900: hsl(var(--ink-900));
+  --color-ink-800: hsl(var(--ink-800));
+  --color-ink-700: hsl(var(--ink-700));
+  --color-ink-600: hsl(var(--ink-600));
+  --color-ink-500: hsl(var(--ink-500));
+  --color-ink-400: hsl(var(--ink-400));
+  --color-ink-300: hsl(var(--ink-300));
+  --color-ink-200: hsl(var(--ink-200));
+  --color-ink-100: hsl(var(--ink-100));
+
   --color-chart-1: var(--chart-1);
   --color-chart-2: var(--chart-2);
   --color-chart-3: var(--chart-3);
   --color-chart-4: var(--chart-4);
   --color-chart-5: var(--chart-5);
+
+  /* Raio derivado de --radius (11px) */
+  --radius-sm: calc(var(--radius) - 4px); /* 7px  */
+  --radius-md: calc(var(--radius) - 2px); /* 9px  */
+  --radius-lg: var(--radius); /* 11px */
+  --radius-xl: calc(var(--radius) + 5px); /* 16px */
+  --radius-2xl: calc(var(--radius) + 9px); /* 20px */
+
+  --shadow-sm: var(--shadow-sm);
+  --shadow-pop: var(--shadow-pop);
 }
 
-/* ─── Glass utility classes ──────────────────────────────────────── */
-.glass {
-  background: var(--glass-bg);
-  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
-  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
-  border: 1px solid var(--glass-border);
-  border-radius: 1rem;
-}
+/* ════════════════════════════════════════════════════════════════════
+   Base
+   ══════════════════════════════════════════════════════════════════ */
+@layer base {
+  * {
+    @apply border-border;
+  }
 
-.glass-soft {
-  background: var(--glass-bg-soft);
-  backdrop-filter: blur(var(--glass-blur-soft)) saturate(160%);
-  -webkit-backdrop-filter: blur(var(--glass-blur-soft)) saturate(160%);
-  border: 1px solid var(--glass-border-soft);
-  border-radius: 1rem;
-}
+  body {
+    @apply bg-background text-foreground antialiased;
+    /* Textura diagonal quase imperceptível, adaptativa ao tema.
+       Fica SÓ no body — cards, popovers e sheets ficam lisos. */
+    background-image: repeating-linear-gradient(
+      45deg,
+      hsl(var(--foreground) / 0.025) 0px,
+      hsl(var(--foreground) / 0.025) 1px,
+      transparent 1px,
+      transparent 14px
+    );
+  }
 
-.solid-surface {
-  background: var(--surface-solid);
-  border-radius: 1rem;
-}
-
-/* Fallback for browsers without backdrop-filter */
-@supports not (backdrop-filter: blur(1px)) {
-  .glass,
-  .glass-soft {
-    background: var(--surface-solid);
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    @apply font-display;
   }
 }
 
-/* ─── Minimal scrollbar (global, applies to every scrollable element) ── */
+/* ════════════════════════════════════════════════════════════════════
+   Utilitários
+   ══════════════════════════════════════════════════════════════════ */
+@utility glass-card {
+  @apply rounded-xl border border-border/60 bg-card/70 shadow-sm backdrop-blur-xl;
+}
+
+@utility eyebrow {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  color: hsl(var(--accent-ink));
+}
+
+/* Glass da identidade já existente do projeto (~24 telas usam). */
+.glass {
+  background: hsl(var(--glass-bg));
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  border: 1px solid hsl(var(--glass-border));
+  border-radius: var(--radius-xl);
+}
+
+.glass-soft {
+  background: hsl(var(--glass-bg-soft));
+  backdrop-filter: blur(var(--glass-blur-soft)) saturate(160%);
+  -webkit-backdrop-filter: blur(var(--glass-blur-soft)) saturate(160%);
+  border: 1px solid hsl(var(--glass-border-soft));
+  border-radius: var(--radius-xl);
+}
+
+.solid-surface {
+  background: hsl(var(--surface-solid));
+  border-radius: var(--radius-xl);
+}
+
+@supports not (backdrop-filter: blur(1px)) {
+  .glass,
+  .glass-soft {
+    background: hsl(var(--surface-solid));
+  }
+}
+
+/* ── Scrollbar mínima ──────────────────────────────────────────── */
 * {
   scrollbar-width: thin;
-  scrollbar-color: var(--atlaz-accent-soft) transparent;
+  scrollbar-color: hsl(var(--ink-400) / 0.5) transparent;
 }
 
 *::-webkit-scrollbar {
@@ -212,15 +380,14 @@
 }
 
 *::-webkit-scrollbar-thumb {
-  background-color: var(--atlaz-accent-soft);
+  background-color: hsl(var(--ink-400) / 0.5);
   border-radius: 9999px;
 }
 
 *::-webkit-scrollbar-thumb:hover {
-  background-color: var(--atlaz-accent);
+  background-color: hsl(var(--ink-400));
 }
 
-/* Mobile: reduce blur */
 @media (max-width: 768px) {
   :root {
     --glass-blur: 16px;
@@ -228,56 +395,13 @@
   }
 }
 
-/* ─── Page gradient background ───────────────────────────────────── */
-body::before {
-  content: '';
-  position: fixed;
-  inset: 0;
-  z-index: -1;
-  pointer-events: none;
-  background:
-    radial-gradient(at 20% 20%, rgba(139, 107, 85, 0.15), transparent 40%),
-    radial-gradient(at 80% 30%, rgba(184, 168, 152, 0.10), transparent 45%),
-    radial-gradient(at 50% 80%, rgba(196, 155, 120, 0.10), transparent 40%);
-}
-
-@media (prefers-color-scheme: dark) {
-  body::before {
-    background:
-      radial-gradient(at 20% 20%, rgba(139, 107, 85, 0.20), transparent 40%),
-      radial-gradient(at 80% 30%, rgba(184, 168, 152, 0.15), transparent 45%),
-      radial-gradient(at 50% 80%, rgba(196, 155, 120, 0.15), transparent 40%);
-  }
-}
-
-/* ─── Accessibility ──────────────────────────────────────────────── */
-*:focus-visible {
-  outline: 2px solid var(--atlaz-accent);
-  outline-offset: 2px;
-  border-radius: 4px;
-}
-
+/* ── Acessibilidade ───────────────────────────────────────────────── */
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
   *::after {
-    animation-duration: 0.01ms !important;
-    transition-duration: 0.01ms !important;
-  }
-}
-
-/* ─── Base ───────────────────────────────────────────────────────── */
-@layer base {
-  * {
-    @apply border-border;
-  }
-  body {
-    background-color: var(--page-bg);
-    color: var(--text-primary);
-    font-family: var(--font-sans), system-ui, sans-serif;
-    overflow-x: hidden;
-  }
-  html {
-    @apply font-sans;
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
   }
 }

@@ -3,6 +3,14 @@ import type { Paginated } from "./types";
 import type { UserStage } from "./etapas";
 import type { Produto } from "./produtos";
 import type { SheetOut } from "./metricas";
+import type { EventoCliente } from "./eventos";
+
+const EXT_MIME: Record<string, string> = {
+  jpg: "image/jpeg",
+  jpeg: "image/jpeg",
+  png: "image/png",
+  webp: "image/webp",
+};
 
 export async function getClientSheet(userId: string, mes?: string): Promise<SheetOut> {
   const { data } = await api.get<SheetOut>(`/admin/clients/${userId}/metricas/planilha`, {
@@ -128,6 +136,8 @@ export interface ClienteLinha {
   description: string | null;
   product_name: string | null;
   product_id: string | null;
+  photo_url?: string | null;
+  created_at: string;
   stages: ClienteStage[];
 }
 
@@ -147,6 +157,7 @@ export interface AdminClientDetailResponse {
   product_name: string | null;
   created_at: string;
   stages: ClienteStage[];
+  events: EventoCliente[];
 }
 
 export const adminClientes = {
@@ -158,7 +169,13 @@ export const adminClientes = {
     const { data } = await api.patch<ClienteUpdateResponse>(`/admin/clients/${id}`, input);
     return data;
   },
-  list: async (params?: { page?: number; page_size?: number; busca?: string }): Promise<Paginated<ClienteLinha>> => {
+  list: async (params?: {
+    page?: number;
+    page_size?: number;
+    busca?: string;
+    ordenar?: "name" | "created_at";
+    direcao?: "asc" | "desc";
+  }): Promise<Paginated<ClienteLinha>> => {
     const { data } = await api.get<Paginated<ClienteLinha>>("/admin/clients", { params });
     return data;
   },
@@ -168,6 +185,14 @@ export const adminClientes = {
   },
   remove: async (id: string): Promise<void> => {
     await api.delete(`/admin/clients/${id}`);
+  },
+  uploadPhoto: async (id: string, file: File): Promise<{ photo_url: string }> => {
+    const ext = file.name.split(".").pop()?.toLowerCase() ?? "";
+    const mimeType = file.type || EXT_MIME[ext] || "image/jpeg";
+    const fd = new FormData();
+    fd.append("photo", file.slice(0, file.size, mimeType), file.name);
+    const { data } = await api.post<{ photo_url: string }>(`/admin/clients/${id}/photo`, fd);
+    return data;
   },
 };
 

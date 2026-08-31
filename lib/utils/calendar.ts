@@ -6,24 +6,18 @@ export function getCalendarYear(): number {
   return Number.isFinite(year) && year > 0 ? year : new Date().getFullYear();
 }
 
-export function getEventosSet(): Set<string> {
-  const raw = process.env.NEXT_PUBLIC_PROXIMOS_EVENTOS;
-  if (!raw) return new Set();
-  try {
-    const parsed = JSON.parse(raw) as string[];
-    return new Set(parsed.map((s) => normalizeKey(s)));
-  } catch {
-    return new Set();
+export function groupByDate<T extends { date: string }>(events: T[]): Map<string, T[]> {
+  const map = new Map<string, T[]>();
+  for (const event of events) {
+    const list = map.get(event.date);
+    if (list) list.push(event);
+    else map.set(event.date, [event]);
   }
+  return map;
 }
 
-function normalizeKey(ddMM: string): string {
-  const [d, m] = ddMM.split(";").map(Number);
-  return `${d}-${m}`;
-}
-
-export function dayKey(day: number, month: number): string {
-  return `${day}-${month}`;
+export function toIsoDate(year: number, monthIndex: number, day: number): string {
+  return `${year}-${String(monthIndex + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
 }
 
 export interface MonthCell {

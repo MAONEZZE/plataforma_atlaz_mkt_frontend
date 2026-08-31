@@ -18,7 +18,7 @@ export default async function LoginPage({
   return (
     <main className="flex flex-1 items-center justify-center p-6 min-h-screen">
       <div className="w-full max-w-sm">
-        <LoginForm inactiveReason={reason === "inactive"} />
+        <LoginForm reason={reason} />
       </div>
     </main>
   );

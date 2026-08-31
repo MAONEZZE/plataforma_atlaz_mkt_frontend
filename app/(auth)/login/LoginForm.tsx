@@ -14,10 +14,15 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 
 interface LoginFormProps {
-  inactiveReason?: boolean;
+  reason?: string;
 }
 
-export function LoginForm({ inactiveReason }: LoginFormProps) {
+const REASON_MESSAGES: Record<string, string> = {
+  inactive: "Sua conta está inativa. Contate o administrador da akeel.",
+  expired: "Sua sessão expirou, entre novamente.",
+};
+
+export function LoginForm({ reason }: LoginFormProps) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
 
@@ -68,13 +73,28 @@ export function LoginForm({ inactiveReason }: LoginFormProps) {
   return (
     <div className="glass p-8 space-y-6">
       <div className="flex flex-col items-center gap-3">
-        <Image src="/Atlaz.png" alt="Atlaz" width={48} height={48} priority className="rounded-lg" />
+        <Image
+          src="/logos/normal/logo-azul.svg"
+          alt="HUB"
+          width={180}
+          height={50}
+          priority
+          className="h-12 w-auto dark:hidden"
+        />
+        <Image
+          src="/logos/normal/logo-verde.svg"
+          alt="HUB"
+          width={180}
+          height={50}
+          priority
+          className="hidden h-12 w-auto dark:block"
+        />
         <h1 className="text-xl font-semibold">Entrar</h1>
       </div>
 
-      {inactiveReason && (
+      {reason && REASON_MESSAGES[reason] && (
         <div className="rounded-lg bg-warning/15 border border-warning/30 px-4 py-3 text-sm text-warning">
-          Sua conta está inativa. Contate o administrador da Atlaz.
+          {REASON_MESSAGES[reason]}
         </div>
       )}
 

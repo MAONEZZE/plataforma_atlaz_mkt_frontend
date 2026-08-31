@@ -270,7 +270,7 @@ export function DadosPessoaisForm() {
             />
             {errors.phone && <p className="text-xs text-danger">{errors.phone.message}</p>}
             <p className="text-xs text-muted-foreground">
-              Usado pela equipe Atlaz para entrar em contato. Não é exibido para outros mentorados.
+              Usado pela equipe akeel para entrar em contato. Não é exibido para outros mentorados.
             </p>
           </div>
 

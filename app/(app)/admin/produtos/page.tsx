@@ -1,28 +1,22 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
 import { toast } from "sonner";
 import axios from "axios";
-import { Pencil, Trash2 } from "lucide-react";
+import { Pencil, Plus, Trash2 } from "lucide-react";
 import { listProdutos, type Produto } from "@/lib/api/produtos";
 import { adminProdutos } from "@/lib/api/admin";
+import { useRowSelection } from "@/hooks/use-row-selection";
 import { GlassCard } from "@/components/glass/GlassCard";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Skeleton } from "@/components/ui/skeleton";
-import { CoverPhotoUpload } from "@/components/ui/CoverPhotoUpload";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from "@/components/ui/dialog";
+import { EmptyState } from "@/components/data/EmptyState";
+import { Pagination } from "@/components/data/Pagination";
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
+import { ProdutoModal } from "./ProdutoModal";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -34,21 +28,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 
-const produtoSchema = z.object({
-  name: z.string().min(1, "Nome obrigatório"),
-  value: z.number().min(0, "Mínimo 0"),
-  description: z.string().optional(),
-});
-type ProdutoFormInput = z.infer<typeof produtoSchema>;
-
-function fileToBase64(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result as string);
-    reader.onerror = reject;
-    reader.readAsDataURL(file);
-  });
-}
+const PAGE_SIZE = 20;
 
 export default function AdminProdutosPage() {
   const queryClient = useQueryClient();
@@ -57,81 +37,48 @@ export default function AdminProdutosPage() {
     queryFn: listProdutos,
   });
 
-  const [editing, setEditing] = useState<Produto | null>(null);
+  const [page, setPage] = useState(1);
+  const [busca, setBusca] = useState("");
+  const [modal, setModal] = useState<{ open: boolean; editing: Produto | null }>({
+    open: false,
+    editing: null,
+  });
   const [deleting, setDeleting] = useState<Produto | null>(null);
+  const [bulkDeleting, setBulkDeleting] = useState(false);
 
-  // cover photo state — create form
-  const [createFile, setCreateFile] = useState<File | null>(null);
-  const [createPreview, setCreatePreview] = useState<string | null>(null);
+  const allProdutos = data ?? [];
+  const filtered = busca.trim()
+    ? allProdutos.filter((p) => {
+        const q = busca.trim().toLowerCase();
+        return p.name.toLowerCase().includes(q) || (p.description ?? "").toLowerCase().includes(q);
+      })
+    : allProdutos;
 
-  // cover photo state — edit dialog
-  const [editFile, setEditFile] = useState<File | null>(null);
-  const [editPreview, setEditPreview] = useState<string | null>(null);
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const safePage = Math.min(page, totalPages);
+  const pageItems = filtered.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
+  const pageIds = pageItems.map((p) => p.id);
 
-  const createForm = useForm<ProdutoFormInput>({
-    resolver: zodResolver(produtoSchema),
-    defaultValues: { name: "", value: 0, description: "" },
-  });
+  const { selected, toggle, toggleAll, clear, allChecked, someChecked } = useRowSelection(pageIds);
 
-  const editForm = useForm<ProdutoFormInput>({
-    resolver: zodResolver(produtoSchema),
-  });
+  useEffect(() => {
+    clear();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [page, busca]);
 
-  function openEdit(p: Produto) {
-    editForm.reset({ name: p.name, value: 0, description: p.description ?? "" });
-    setEditFile(null);
-    setEditPreview(p.cover_photo ?? null);
-    setEditing(p);
+  function invalidate() {
+    queryClient.invalidateQueries({ queryKey: ["produtos"] });
   }
-
-  function toPayload(d: ProdutoFormInput) {
-    return {
-      name: d.name,
-      value: d.value,
-      description: d.description?.trim() ? d.description.trim() : null,
-    };
-  }
-
-  const createMut = useMutation({
-    mutationFn: async (d: ProdutoFormInput) => {
-      const cover_photo = createFile ? await fileToBase64(createFile) : null;
-      return adminProdutos.create({ ...toPayload(d), cover_photo });
-    },
-    onSuccess: () => {
-      toast.success("Produto criado!");
-      createForm.reset({ name: "", value: 0, description: "" });
-      setCreateFile(null);
-      setCreatePreview(null);
-      queryClient.invalidateQueries({ queryKey: ["produtos"] });
-    },
-    onError: () => toast.error("Erro ao criar produto."),
-  });
-
-  const editMut = useMutation({
-    mutationFn: async (d: ProdutoFormInput) => {
-      const cover_photo = editFile ? await fileToBase64(editFile) : editPreview;
-      return adminProdutos.update(editing!.id, { ...toPayload(d), cover_photo });
-    },
-    onSuccess: () => {
-      toast.success("Produto atualizado!");
-      setEditing(null);
-      queryClient.invalidateQueries({ queryKey: ["produtos"] });
-    },
-    onError: () => toast.error("Erro ao atualizar produto."),
-  });
 
   const deleteMut = useMutation({
     mutationFn: () => adminProdutos.remove(deleting!.id),
     onSuccess: () => {
       toast.success("Produto removido.");
       setDeleting(null);
-      queryClient.invalidateQueries({ queryKey: ["produtos"] });
+      invalidate();
     },
     onError: (err) => {
-      if (
-        axios.isAxiosError(err) &&
-        err.response?.data?.error?.code === "PRODUCT_IN_USE"
-      ) {
+      if (axios.isAxiosError(err) && err.response?.data?.error?.code === "PRODUCT_IN_USE") {
         toast.error("Produto está vinculado a clientes e não pode ser removido.");
       } else {
         toast.error("Erro ao remover produto.");
@@ -139,243 +86,144 @@ export default function AdminProdutosPage() {
     },
   });
 
+  const bulkDeleteMut = useMutation({
+    mutationFn: async () => {
+      const ids = Array.from(selected);
+      const results = await Promise.allSettled(ids.map((id) => adminProdutos.remove(id)));
+      return { ids, results };
+    },
+    onSuccess: ({ ids, results }) => {
+      const failedCount = results.filter((r) => r.status === "rejected").length;
+      if (failedCount > 0) {
+        toast.error(`${failedCount} de ${ids.length} produto(s) não puderam ser removidos.`);
+      } else {
+        toast.success(`${ids.length} produto(s) removidos.`);
+        clear();
+      }
+      setBulkDeleting(false);
+      invalidate();
+    },
+  });
+
   return (
     <div className="space-y-5">
-      <div>
-        <h1 className="text-2xl font-semibold">Produtos</h1>
-        <p className="text-sm text-muted-foreground mt-0.5">
-          Gerencie os produtos da plataforma.
-        </p>
+      <div className="flex items-center justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">Produtos</h1>
+          <p className="text-sm text-muted-foreground mt-0.5">
+            Gerencie os produtos da plataforma.
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            disabled={selected.size === 0}
+            onClick={() => setBulkDeleting(true)}
+          >
+            <Trash2 className="size-3.5" />
+            Excluir{selected.size > 0 ? ` (${selected.size})` : ""}
+          </Button>
+          <Button variant="primary" onClick={() => setModal({ open: true, editing: null })}>
+            <Plus className="size-3.5" />
+            Novo produto
+          </Button>
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-[380px_minmax(0,1fr)] gap-6 items-start">
-        {/* Left — create form */}
-        <GlassCard variant="solid" className="space-y-4">
-          <h2 className="font-medium">Novo produto</h2>
-          <form
-            onSubmit={createForm.handleSubmit((d) => createMut.mutate(d))}
-            className="space-y-4"
-            noValidate
-          >
-            <div className="space-y-1.5">
-              <Label>Nome</Label>
-              <Input
-                {...createForm.register("name")}
-                placeholder="Nome do produto"
-              />
-              {createForm.formState.errors.name && (
-                <p className="text-xs text-danger">
-                  {createForm.formState.errors.name.message}
-                </p>
-              )}
-            </div>
-            <div className="space-y-1.5">
-              <Label>Valor (R$)</Label>
-              <Input
-                type="number"
-                min={0}
-                step={0.01}
-                {...createForm.register("value", { valueAsNumber: true })}
-                placeholder="0,00"
-              />
-              {createForm.formState.errors.value && (
-                <p className="text-xs text-danger">
-                  {createForm.formState.errors.value.message}
-                </p>
-              )}
-            </div>
-            <div className="space-y-1.5">
-              <Label>Foto de capa (opcional)</Label>
-              <CoverPhotoUpload
-                preview={createPreview}
-                onFileSelect={(f, url) => { setCreateFile(f); setCreatePreview(url); }}
-                onClear={() => { setCreateFile(null); setCreatePreview(null); }}
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label>Descrição (opcional)</Label>
-              <textarea
-                {...createForm.register("description")}
-                placeholder="Descrição do produto"
-                rows={3}
-                className="flex w-full rounded-lg border border-input bg-transparent px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:border-ring focus:ring-3 focus:ring-ring/50"
-              />
-            </div>
-            <Button
-              type="submit"
-              variant="primary"
-              className="w-full"
-              disabled={createMut.isPending}
-            >
-              {createMut.isPending ? "Criando..." : "Criar produto"}
-            </Button>
-          </form>
-        </GlassCard>
+      <GlassCard variant="solid" className="space-y-4">
+        <div className="flex items-center justify-between gap-3">
+          <Input
+            value={busca}
+            onChange={(e) => { setBusca(e.target.value); setPage(1); }}
+            placeholder="Buscar por nome ou descrição..."
+            className="max-w-xs"
+          />
+          <span className="text-xs text-muted-foreground shrink-0">{filtered.length} registros</span>
+        </div>
 
-        {/* Right — products table */}
-        <GlassCard variant="solid" className="space-y-4 h-fit">
-          <div className="flex items-center justify-between">
-            <h2 className="font-semibold">Produtos cadastrados</h2>
-            <span className="text-xs text-muted-foreground">
-              {data?.length ?? 0} registros
-            </span>
-          </div>
-          {isLoading ? (
-            <Skeleton className="h-48 w-full rounded-xl" />
-          ) : data?.length === 0 ? (
-            <p className="text-sm text-muted-foreground text-center py-8">
-              Nenhum produto ainda.
-            </p>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm table-fixed">
-                <colgroup>
-                  <col className="w-[10%]" />
-                  <col className="w-[30%]" />
-                  <col className="w-[48%]" />
-                  <col className="w-[12%]" />
-                </colgroup>
-                <thead>
-                  <tr className="border-b border-border">
-                    <th className="text-left pb-2 font-medium text-muted-foreground text-xs">
-                      Capa
-                    </th>
-                    <th className="text-left pb-2 font-medium text-muted-foreground text-xs">
-                      Nome
-                    </th>
-                    <th className="text-left pb-2 font-medium text-muted-foreground text-xs">
-                      Descrição
-                    </th>
-                    <th className="pb-2" />
-                  </tr>
-                </thead>
-                <tbody>
-                  {data?.map((p) => (
-                    <tr
-                      key={p.id}
-                      className="border-b border-border/50 last:border-0"
-                    >
-                      <td className="py-2.5 pr-3">
-                        {p.cover_photo ? (
-                          // eslint-disable-next-line @next/next/no-img-element
-                          <img
-                            src={p.cover_photo}
-                            alt={p.name}
-                            className="w-9 h-9 rounded-lg object-cover"
-                          />
-                        ) : (
-                          <div className="w-9 h-9 rounded-lg bg-muted" />
-                        )}
-                      </td>
-                      <td className="py-2.5 pr-4 font-medium break-all">{p.name}</td>
-                      <td className="py-2.5 pr-4 text-muted-foreground text-xs">
-                        <span className="line-clamp-2 break-all" title={p.description ?? undefined}>
-                          {p.description ?? "—"}
-                        </span>
-                      </td>
-                      <td className="py-2.5">
-                        <div className="flex items-center gap-1 justify-end">
-                          <button
-                            type="button"
-                            onClick={() => openEdit(p)}
-                            className="p-1.5 rounded-lg hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
-                          >
-                            <Pencil className="size-3.5" />
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => setDeleting(p)}
-                            className="p-1.5 rounded-lg hover:bg-danger/10 transition-colors text-muted-foreground hover:text-danger"
-                          >
-                            <Trash2 className="size-3.5" />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </GlassCard>
-      </div>
+        {isLoading ? (
+          <Skeleton className="h-64 w-full rounded-2xl" />
+        ) : pageItems.length === 0 ? (
+          <EmptyState title={busca ? "Nenhum produto encontrado." : "Nenhum produto ainda."} className="py-8" />
+        ) : (
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>
+                  <Checkbox
+                    checked={allChecked}
+                    indeterminate={someChecked}
+                    onCheckedChange={toggleAll}
+                    aria-label="Selecionar todos"
+                  />
+                </TableHead>
+                <TableHead>Capa</TableHead>
+                <TableHead>Nome</TableHead>
+                <TableHead>Descrição</TableHead>
+                <TableHead />
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {pageItems.map((p) => (
+                <TableRow
+                  key={p.id}
+                  onClick={() => setModal({ open: true, editing: p })}
+                  className="cursor-pointer hover:bg-accent/40"
+                >
+                  <TableCell onClick={(e) => e.stopPropagation()}>
+                    <Checkbox
+                      checked={selected.has(p.id)}
+                      onCheckedChange={() => toggle(p.id)}
+                      aria-label={`Selecionar ${p.name}`}
+                    />
+                  </TableCell>
+                  <TableCell>
+                    {p.cover_photo ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={p.cover_photo} alt={p.name} className="size-9 rounded-lg object-cover" />
+                    ) : (
+                      <div className="size-9 rounded-lg bg-muted" />
+                    )}
+                  </TableCell>
+                  <TableCell className="font-medium break-all">{p.name}</TableCell>
+                  <TableCell className="text-muted-foreground text-xs max-w-[280px] whitespace-normal">
+                    <span className="line-clamp-2 break-all">{p.description ?? "—"}</span>
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-1 justify-end">
+                      <button
+                        type="button"
+                        onClick={(e) => { e.stopPropagation(); setModal({ open: true, editing: p }); }}
+                        className="p-1.5 rounded-lg hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
+                      >
+                        <Pencil className="size-3.5" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={(e) => { e.stopPropagation(); setDeleting(p); }}
+                        className="p-1.5 rounded-lg hover:bg-danger/10 transition-colors text-muted-foreground hover:text-danger"
+                      >
+                        <Trash2 className="size-3.5" />
+                      </button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        )}
 
-      {/* Edit dialog */}
-      <Dialog open={!!editing} onOpenChange={(o) => !o && setEditing(null)}>
-        <DialogContent className="max-w-sm" showCloseButton={false}>
-          <DialogHeader>
-            <DialogTitle>Editar produto</DialogTitle>
-          </DialogHeader>
-          <form
-            onSubmit={editForm.handleSubmit((d) => editMut.mutate(d))}
-            className="space-y-4"
-            noValidate
-          >
-            <div className="space-y-1.5">
-              <Label>Nome</Label>
-              <Input {...editForm.register("name")} />
-              {editForm.formState.errors.name && (
-                <p className="text-xs text-danger">
-                  {editForm.formState.errors.name.message}
-                </p>
-              )}
-            </div>
-            <div className="space-y-1.5">
-              <Label>Valor (R$)</Label>
-              <Input
-                type="number"
-                min={0}
-                step={0.01}
-                {...editForm.register("value", { valueAsNumber: true })}
-                placeholder="0,00"
-              />
-              {editForm.formState.errors.value && (
-                <p className="text-xs text-danger">
-                  {editForm.formState.errors.value.message}
-                </p>
-              )}
-            </div>
-            <div className="space-y-1.5">
-              <Label>Foto de capa (opcional)</Label>
-              <CoverPhotoUpload
-                preview={editPreview}
-                onFileSelect={(f, url) => { setEditFile(f); setEditPreview(url); }}
-                onClear={() => { setEditFile(null); setEditPreview(null); }}
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label>Descrição (opcional)</Label>
-              <textarea
-                {...editForm.register("description")}
-                rows={3}
-                className="flex w-full rounded-lg border border-input bg-transparent px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:border-ring focus:ring-3 focus:ring-ring/50"
-              />
-            </div>
-            <DialogFooter>
-              <button
-                type="button"
-                onClick={() => setEditing(null)}
-                className="text-sm text-muted-foreground hover:text-foreground transition-colors px-3 py-2"
-              >
-                Cancelar
-              </button>
-              <Button
-                type="submit"
-                variant="primary"
-                disabled={editMut.isPending}
-              >
-                {editMut.isPending ? "Salvando..." : "Salvar"}
-              </Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
+        <Pagination page={safePage} totalPages={totalPages} onPageChange={setPage} />
+      </GlassCard>
 
-      {/* Delete confirm */}
-      <AlertDialog
-        open={!!deleting}
-        onOpenChange={(o) => !o && setDeleting(null)}
-      >
+      <ProdutoModal
+        open={modal.open}
+        onOpenChange={(o) => setModal((p) => ({ ...p, open: o }))}
+        editingProduto={modal.editing}
+        onSuccess={invalidate}
+      />
+
+      <AlertDialog open={!!deleting} onOpenChange={(o) => !o && setDeleting(null)}>
         <AlertDialogContent className="bg-card">
           <AlertDialogHeader>
             <AlertDialogTitle>Remover produto?</AlertDialogTitle>
@@ -385,11 +233,25 @@ export default function AdminProdutosPage() {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={() => deleteMut.mutate()}
-              disabled={deleteMut.isPending}
-            >
+            <AlertDialogAction onClick={() => deleteMut.mutate()} disabled={deleteMut.isPending}>
               {deleteMut.isPending ? "Removendo..." : "Remover"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={bulkDeleting} onOpenChange={(o) => !o && setBulkDeleting(false)}>
+        <AlertDialogContent className="bg-card">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remover {selected.size} produto(s)?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Produtos vinculados a clientes não poderão ser removidos.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={() => bulkDeleteMut.mutate()} disabled={bulkDeleteMut.isPending}>
+              {bulkDeleteMut.isPending ? "Removendo..." : "Remover"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

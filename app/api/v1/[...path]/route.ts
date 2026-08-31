@@ -1,4 +1,5 @@
 import { type NextRequest, NextResponse } from "next/server";
+import { apiBaseUrl } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -29,7 +30,7 @@ function shouldDrop(key: string) {
 }
 
 async function proxy(req: NextRequest, params: { path: string[] }) {
-  const apiBase = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+  const apiBase = apiBaseUrl();
   const pathStr = params.path.join("/");
   const search = req.nextUrl.search;
   const target = `${apiBase}/api/v1/${pathStr}${search}`;

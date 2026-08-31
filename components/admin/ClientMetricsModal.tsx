@@ -11,6 +11,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { MonthPicker } from "@/components/forms/MonthPicker";
 import { PlanilhaView } from "@/components/metrics/PlanilhaView";
 import { MetricsLineChart } from "@/components/metrics/MetricsLineChart";
+import { ClientEventsCalendarCard } from "@/components/calendar/ClientEventsCalendarCard";
 import { Button } from "@/components/ui/button";
 import { getClientSheet } from "@/lib/api/admin";
 
@@ -54,6 +55,7 @@ export function ClientMetricsModal({ clientId, clientName, onOpenChange }: Clien
           ) : (
             <div className="space-y-4">
               <MetricsLineChart sheet={data} />
+              {clientId && <ClientEventsCalendarCard clientId={clientId} />}
               <GlassCard variant="solid" className="space-y-3">
                 <h3 className="font-semibold text-sm">Planilha de métricas</h3>
                 <PlanilhaView sheet={data} readOnly />

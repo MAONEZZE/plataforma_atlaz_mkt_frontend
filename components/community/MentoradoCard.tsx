@@ -110,7 +110,7 @@ export function MentoradoCard({ mentorado }: MentoradoCardProps) {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="solid-surface p-5 flex flex-col items-center gap-3 text-center shadow-sm w-full cursor-pointer hover:-translate-y-1 hover:[box-shadow:0_0_22px_color-mix(in_srgb,var(--primary)_28%,transparent)] transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 relative"
+        className="solid-surface p-5 flex flex-col items-center gap-3 text-center shadow-sm w-full cursor-pointer hover:-translate-y-1 hover:[box-shadow:0_0_22px_color-mix(in_srgb,var(--color-primary)_28%,transparent)] transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 relative"
       >
         {product_name && (
           <span className="absolute top-3 left-3 inline-flex items-center rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
@@ -129,7 +129,7 @@ export function MentoradoCard({ mentorado }: MentoradoCardProps) {
             <p className="font-semibold text-sm leading-tight">{name}</p>
             {role === "admin" && (
               <span className="inline-flex items-center rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-semibold text-primary">
-                Equipe Atlaz
+                Equipe akeel
               </span>
             )}
           </div>
@@ -165,7 +165,7 @@ export function MentoradoCard({ mentorado }: MentoradoCardProps) {
               <DialogTitle className="text-base">{name}</DialogTitle>
               {role === "admin" && (
                 <span className="inline-flex items-center rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-semibold text-primary">
-                  Equipe Atlaz
+                  Equipe akeel
                 </span>
               )}
             </div>

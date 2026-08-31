@@ -2,46 +2,61 @@ import { redirect } from "next/navigation";
 import axios from "axios";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { AuthHydration } from "@/components/providers/auth-hydration";
-import { Navbar } from "@/components/layout/Navbar";
+import { AppShell } from "@/components/layout/app-shell";
+import { apiBaseUrl } from "@/lib/utils";
 import type { Usuario } from "@/lib/api/types";
 
-async function fetchMe(accessToken: string): Promise<Usuario | null> {
+type MeResult =
+  | { ok: true; user: Usuario }
+  | { ok: false; reason: "expired" | "inactive" };
+
+async function fetchMe(accessToken: string): Promise<MeResult> {
   try {
     const { data } = await axios.get<Usuario>(
-      `${process.env.NEXT_PUBLIC_API_URL ?? ""}/api/v1/me`,
+      `${apiBaseUrl()}/api/v1/me`,
       { headers: { Authorization: `Bearer ${accessToken}` } },
     );
-    return data;
+    return { ok: true, user: data };
   } catch (err) {
     if (axios.isAxiosError(err)) {
       const status = err.response?.status;
-      if (status === 401 || status === 403) return null;
+      if (status === 401) return { ok: false, reason: "expired" };
+      if (status === 403) return { ok: false, reason: "inactive" };
     }
     throw err;
   }
 }
 
+// O guard vive aqui, no layout do route group — não em cada página.
+// As rotas públicas ficam em (auth) e não montam o shell.
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createSupabaseServerClient();
+
+  // getUser() valida o token contra o Supabase e renova o cookie quando
+  // possível — getSession() só decodifica o que já está no cookie.
+  const {
+    data: { user: authUser },
+  } = await supabase.auth.getUser();
+
+  if (!authUser) redirect("/login");
+
   const {
     data: { session },
   } = await supabase.auth.getSession();
 
   if (!session) redirect("/login");
 
-  const me = await fetchMe(session.access_token);
-  if (!me) {
-    await supabase.auth.signOut();
-    redirect("/login?reason=inactive");
+  const result = await fetchMe(session.access_token);
+  if (!result.ok) {
+    // signOut() aqui não limpa cookie de verdade (Server Component); o
+    // Route Handler faz isso e redireciona com o motivo certo.
+    redirect(`/auth/logout?reason=${result.reason}`);
   }
 
   return (
     <>
-      <AuthHydration user={me} />
-      <Navbar />
-      <main className="flex-1 mx-auto w-full max-w-7xl px-4 sm:px-6 pt-20 pb-6">
-        {children}
-      </main>
+      <AuthHydration user={result.user} />
+      <AppShell user={result.user}>{children}</AppShell>
     </>
   );
 }

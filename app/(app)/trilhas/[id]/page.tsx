@@ -46,7 +46,7 @@ export default function TrilhaDetalhePage() {
       <div
         className="relative rounded-2xl overflow-hidden p-8 text-white"
         style={{
-          background: `linear-gradient(135deg, color-mix(in srgb, var(--primary) 80%, transparent), color-mix(in srgb, var(--primary) 40%, transparent))`,
+          background: `linear-gradient(135deg, color-mix(in srgb, var(--color-primary) 80%, transparent), color-mix(in srgb, var(--color-primary) 40%, transparent))`,
         }}
       >
         <Link
@@ -56,7 +56,7 @@ export default function TrilhaDetalhePage() {
           <ChevronLeft className="size-4" />
           Voltar para Trilhas
         </Link>
-        <h1 className="text-2xl font-bold">{trilha.title}</h1>
+        <h1 className="text-2xl font-bold tracking-tight">{trilha.title}</h1>
         {trilha.description && <p className="mt-1 text-sm text-white/80 max-w-lg">{trilha.description}</p>}
         <div className="mt-4 space-y-1.5 max-w-sm">
           <ProgressBar pct={pct} />

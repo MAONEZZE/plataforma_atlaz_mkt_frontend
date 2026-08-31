@@ -1,31 +1,26 @@
 "use client";
 
-import { useState } from "react";
-import { useForm, Controller } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
+import { useEffect, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import axios from "axios";
-import PhoneInput from "react-phone-number-input";
-import "react-phone-number-input/style.css";
-import { Pencil, Trash2 } from "lucide-react";
+import { format } from "date-fns";
+import { ArrowDown, ArrowUp, ArrowUpDown, Eye, Pencil, Plus, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { cadastroClienteSchema, type CadastroClienteInput } from "@/lib/utils/validations";
-import { adminClientes, adminStages, adminStageFolders } from "@/lib/api/admin";
+import { adminClientes } from "@/lib/api/admin";
 import type { ClienteLinha } from "@/lib/api/admin";
-import { listProdutos } from "@/lib/api/produtos";
 import { formatPhone } from "@/lib/utils/format";
-import { groupStagesByFolder } from "@/lib/utils/stages";
+import { useDebouncedValue } from "@/hooks/use-debounced-value";
+import { useRowSelection } from "@/hooks/use-row-selection";
 import { GlassCard } from "@/components/glass/GlassCard";
+import { EmptyState } from "@/components/data/EmptyState";
+import { Pagination } from "@/components/data/Pagination";
 import { ClientManageModal } from "./ClientManageModal";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
-import { PasswordInput } from "@/components/forms/PasswordInput";
-import { PasswordStrengthIndicator } from "@/components/forms/PasswordStrengthIndicator";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -39,68 +34,194 @@ import {
 
 const PAGE_SIZE = 20;
 
-const PHONE_CLASS =
-  "flex h-9 items-center rounded-lg border border-input bg-transparent focus-within:border-ring focus-within:ring-3 focus-within:ring-ring/50 " +
-  "[&_.PhoneInputCountry]:flex [&_.PhoneInputCountry]:items-center [&_.PhoneInputCountry]:pl-2 [&_.PhoneInputCountry]:gap-1 " +
-  "[&_.PhoneInputCountryIcon]:size-5 [&_.PhoneInputCountrySelect]:border-0 [&_.PhoneInputCountrySelect]:bg-transparent " +
-  "[&_.PhoneInputCountrySelect]:text-foreground [&_.PhoneInputCountrySelect]:outline-none [&_.PhoneInputCountrySelect]:text-sm [&_.PhoneInputCountrySelect]:px-1 " +
-  "[&_.PhoneInputInput]:flex-1 [&_.PhoneInputInput]:h-full [&_.PhoneInputInput]:border-0 [&_.PhoneInputInput]:bg-transparent " +
-  "[&_.PhoneInputInput]:px-2.5 [&_.PhoneInputInput]:text-sm [&_.PhoneInputInput]:outline-none [&_.PhoneInputInput]:ring-0 " +
-  "[&_.PhoneInputInput]:shadow-none [&_.PhoneInputInput]:focus:outline-none [&_.PhoneInputInput]:focus:ring-0 " +
-  "[&_.PhoneInputInput]:focus:shadow-none [&_.PhoneInputInput]:placeholder:text-muted-foreground";
+type SortField = "name" | "created_at";
+interface SortState {
+  field: SortField;
+  direction: "asc" | "desc";
+}
 
-function ClientesTable() {
+export default function AdminClientesPage() {
   const [page, setPage] = useState(1);
-  const [managing, setManaging] = useState<ClienteLinha | null>(null);
+  const [busca, setBusca] = useState("");
+  const buscaDebounced = useDebouncedValue(busca, 400);
+  const [sort, setSort] = useState<SortState | null>(null);
+  const [modal, setModal] = useState<{ open: boolean; editing: ClienteLinha | null }>({
+    open: false,
+    editing: null,
+  });
   const [deleting, setDeleting] = useState<ClienteLinha | null>(null);
+  const [bulkDeleting, setBulkDeleting] = useState(false);
   const queryClient = useQueryClient();
   const router = useRouter();
 
+  const filterKey = `${buscaDebounced}|${sort?.field ?? ""}|${sort?.direction ?? ""}`;
+  const [lastFilterKey, setLastFilterKey] = useState(filterKey);
+  if (filterKey !== lastFilterKey) {
+    setLastFilterKey(filterKey);
+    setPage(1);
+  }
+
   const { data, isLoading, isError } = useQuery({
-    queryKey: ["admin", "clientes", page],
-    queryFn: () => adminClientes.list({ page, page_size: PAGE_SIZE }),
+    queryKey: ["admin", "clientes", page, buscaDebounced, sort?.field, sort?.direction],
+    queryFn: () =>
+      adminClientes.list({
+        page,
+        page_size: PAGE_SIZE,
+        busca: buscaDebounced || undefined,
+        ordenar: sort?.field,
+        direcao: sort?.direction,
+      }),
   });
+
+  const items = data?.items ?? [];
+  const total = data?.total ?? 0;
+  const totalPages = Math.ceil(total / PAGE_SIZE);
+  const pageIds = items.map((c) => c.id);
+
+  const { selected, toggle, toggleAll, clear, allChecked, someChecked } = useRowSelection(pageIds);
+
+  useEffect(() => {
+    clear();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [page, buscaDebounced]);
+
+  function toggleSort(field: SortField) {
+    setSort((prev) => {
+      if (prev?.field === field) {
+        return { field, direction: prev.direction === "asc" ? "desc" : "asc" };
+      }
+      return { field, direction: "asc" };
+    });
+  }
+
+  function sortIcon(field: SortField) {
+    if (sort?.field !== field) return <ArrowUpDown className="size-3 opacity-40" />;
+    return sort.direction === "asc" ? <ArrowUp className="size-3" /> : <ArrowDown className="size-3" />;
+  }
+
+  function invalidate() {
+    queryClient.invalidateQueries({ queryKey: ["admin", "clientes"] });
+  }
 
   const deleteMut = useMutation({
     mutationFn: () => adminClientes.remove(deleting!.id),
     onSuccess: () => {
       toast.success("Cliente removido.");
       setDeleting(null);
-      queryClient.invalidateQueries({ queryKey: ["admin", "clientes"] });
+      invalidate();
     },
     onError: () => toast.error("Erro ao remover cliente."),
   });
 
-  if (isLoading) return <Skeleton className="h-64 w-full rounded-2xl" />;
-  if (isError) return (
-    <div className="rounded-xl border border-danger/30 bg-danger/10 px-4 py-3 text-sm text-danger">
-      Erro ao carregar clientes.
-    </div>
-  );
+  const bulkDeleteMut = useMutation({
+    mutationFn: async () => {
+      const ids = Array.from(selected);
+      const results = await Promise.allSettled(ids.map((id) => adminClientes.remove(id)));
+      return { ids, results };
+    },
+    onSuccess: ({ ids, results }) => {
+      const failedIds = ids.filter((_, i) => results[i].status === "rejected");
+      if (failedIds.length > 0) {
+        toast.error(`${failedIds.length} de ${ids.length} cliente(s) não puderam ser removidos.`);
+      } else {
+        toast.success(`${ids.length} cliente(s) removidos.`);
+        clear();
+      }
+      setBulkDeleting(false);
+      invalidate();
+    },
+  });
 
-  const items = data?.items ?? [];
-  const total = data?.total ?? 0;
-  const totalPages = Math.ceil(total / PAGE_SIZE);
+  if (isError) {
+    return (
+      <div className="space-y-5">
+        <h1 className="text-2xl font-bold tracking-tight">Clientes</h1>
+        <div className="rounded-xl border border-danger/30 bg-danger/10 px-4 py-3 text-sm text-danger">
+          Erro ao carregar clientes.
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <>
-      <GlassCard variant="solid" className="space-y-4 h-fit">
-        <div className="flex items-center justify-between">
-          <h2 className="font-semibold">Clientes cadastrados</h2>
-          <span className="text-xs text-muted-foreground">{total} registros</span>
+    <div className="space-y-5">
+      <div className="flex items-center justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">Clientes</h1>
+          <p className="text-sm text-muted-foreground mt-0.5">
+            Gerencie as contas de clientes da plataforma.
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            disabled={selected.size === 0}
+            onClick={() => setBulkDeleting(true)}
+          >
+            <Trash2 className="size-3.5" />
+            Excluir{selected.size > 0 ? ` (${selected.size})` : ""}
+          </Button>
+          <Button variant="primary" onClick={() => setModal({ open: true, editing: null })}>
+            <Plus className="size-3.5" />
+            Novo cliente
+          </Button>
+        </div>
+      </div>
+
+      <GlassCard variant="solid" className="space-y-4">
+        <div className="flex items-center justify-between gap-3">
+          <Input
+            value={busca}
+            onChange={(e) => setBusca(e.target.value)}
+            placeholder="Buscar por nome ou email..."
+            className="max-w-xs"
+          />
+          <span className="text-xs text-muted-foreground shrink-0">{total} registros</span>
         </div>
 
-        {items.length === 0 ? (
-          <p className="text-sm text-muted-foreground text-center py-8">Nenhum cliente ainda.</p>
+        {isLoading ? (
+          <Skeleton className="h-64 w-full rounded-2xl" />
+        ) : items.length === 0 ? (
+          <EmptyState
+            title={buscaDebounced ? "Nenhum cliente encontrado." : "Nenhum cliente ainda."}
+            className="py-8"
+          />
         ) : (
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Nome</TableHead>
+                <TableHead>
+                  <Checkbox
+                    checked={allChecked}
+                    indeterminate={someChecked}
+                    onCheckedChange={toggleAll}
+                    aria-label="Selecionar todos"
+                  />
+                </TableHead>
+                <TableHead>
+                  <button
+                    type="button"
+                    onClick={() => toggleSort("name")}
+                    className="flex items-center gap-1 hover:text-foreground transition-colors"
+                  >
+                    Nome
+                    {sortIcon("name")}
+                  </button>
+                </TableHead>
                 <TableHead>Email</TableHead>
                 <TableHead>Telefone</TableHead>
                 <TableHead>Descrição</TableHead>
                 <TableHead>Produto</TableHead>
+                <TableHead>
+                  <button
+                    type="button"
+                    onClick={() => toggleSort("created_at")}
+                    className="flex items-center gap-1 hover:text-foreground transition-colors"
+                  >
+                    Cadastro
+                    {sortIcon("created_at")}
+                  </button>
+                </TableHead>
                 <TableHead />
               </TableRow>
             </TableHeader>
@@ -108,9 +229,16 @@ function ClientesTable() {
               {items.map((c) => (
                 <TableRow
                   key={c.id}
-                  onClick={() => router.push(`/admin/clientes/${c.id}`)}
+                  onClick={() => setModal({ open: true, editing: c })}
                   className="cursor-pointer hover:bg-accent/40"
                 >
+                  <TableCell onClick={(e) => e.stopPropagation()}>
+                    <Checkbox
+                      checked={selected.has(c.id)}
+                      onCheckedChange={() => toggle(c.id)}
+                      aria-label={`Selecionar ${c.name}`}
+                    />
+                  </TableCell>
                   <TableCell className="font-medium break-all">{c.name}</TableCell>
                   <TableCell className="text-muted-foreground break-all">{c.email}</TableCell>
                   <TableCell className="text-muted-foreground break-all">{formatPhone(c.phone)}</TableCell>
@@ -118,11 +246,21 @@ function ClientesTable() {
                     <span className="line-clamp-2">{c.description ?? "—"}</span>
                   </TableCell>
                   <TableCell className="text-muted-foreground text-xs break-all">{c.product_name ?? "—"}</TableCell>
+                  <TableCell className="text-muted-foreground text-xs">
+                    {c.created_at ? format(new Date(c.created_at), "dd/MM/yyyy") : "—"}
+                  </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-1 justify-end">
                       <button
                         type="button"
-                        onClick={(e) => { e.stopPropagation(); setManaging(c); }}
+                        onClick={(e) => { e.stopPropagation(); router.push(`/admin/clientes/${c.id}`); }}
+                        className="p-1.5 rounded-lg hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
+                      >
+                        <Eye className="size-3.5" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={(e) => { e.stopPropagation(); setModal({ open: true, editing: c }); }}
                         className="p-1.5 rounded-lg hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
                       >
                         <Pencil className="size-3.5" />
@@ -142,35 +280,15 @@ function ClientesTable() {
           </Table>
         )}
 
-        {totalPages > 1 && (
-          <div className="flex items-center justify-between pt-1">
-            <button
-              type="button"
-              onClick={() => setPage((p) => Math.max(1, p - 1))}
-              disabled={page <= 1}
-              className="text-xs text-primary hover:underline disabled:opacity-40 disabled:no-underline"
-            >
-              Anterior
-            </button>
-            <span className="text-xs text-muted-foreground">{page} / {totalPages}</span>
-            <button
-              type="button"
-              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-              disabled={page >= totalPages}
-              className="text-xs text-primary hover:underline disabled:opacity-40 disabled:no-underline"
-            >
-              Próximo
-            </button>
-          </div>
-        )}
+        <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
       </GlassCard>
 
-      {managing && (
-        <ClientManageModal
-          client={managing}
-          onClose={() => setManaging(null)}
-        />
-      )}
+      <ClientManageModal
+        open={modal.open}
+        onOpenChange={(o) => setModal((p) => ({ ...p, open: o }))}
+        client={modal.editing}
+        onSuccess={invalidate}
+      />
 
       <AlertDialog open={!!deleting} onOpenChange={(o) => !o && setDeleting(null)}>
         <AlertDialogContent className="bg-card">
@@ -191,206 +309,26 @@ function ClientesTable() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </>
-  );
-}
 
-export default function CadastrarClientePage() {
-  const queryClient = useQueryClient();
-
-  const { data: produtos } = useQuery({ queryKey: ["produtos"], queryFn: listProdutos });
-  const { data: allStages } = useQuery({ queryKey: ["admin", "stages"], queryFn: adminStages.list });
-  const { data: stageFolders } = useQuery({ queryKey: ["admin", "stage-folders"], queryFn: adminStageFolders.list });
-  const stageGroups = groupStagesByFolder(allStages ?? [], stageFolders ?? []);
-
-  const {
-    register,
-    handleSubmit,
-    watch,
-    reset,
-    control,
-    formState: { errors, isValid },
-  } = useForm<CadastroClienteInput>({
-    resolver: zodResolver(cadastroClienteSchema),
-    mode: "onTouched",
-  });
-
-  const password = watch("password") ?? "";
-
-  const [selectedProductId, setSelectedProductId] = useState("");
-  const [attachedIds, setAttachedIds] = useState<Set<string>>(new Set());
-
-  function toggleCreateStage(stage_id: string, checked: boolean) {
-    setAttachedIds((prev) => {
-      const next = new Set(prev);
-      if (checked) next.add(stage_id);
-      else next.delete(stage_id);
-      return next;
-    });
-  }
-
-  const mut = useMutation({
-    mutationFn: (data: CadastroClienteInput) =>
-      adminClientes.create({
-        ...data,
-        description: data.description || null,
-        product_id: selectedProductId || null,
-        stage_ids: Array.from(attachedIds),
-      }),
-    onSuccess: () => {
-      toast.success("Cliente cadastrado com sucesso!");
-      reset();
-      setSelectedProductId("");
-      setAttachedIds(new Set());
-      queryClient.invalidateQueries({ queryKey: ["admin", "clientes"] });
-    },
-    onError: (err) => {
-      if (axios.isAxiosError(err) && err.response?.status === 409) {
-        toast.error("Email já cadastrado.");
-      } else {
-        toast.error("Erro ao cadastrar cliente.");
-      }
-    },
-  });
-
-  return (
-    <div className="space-y-5">
-      <div>
-        <h1 className="text-2xl font-semibold">Cadastrar Cliente</h1>
-        <p className="text-sm text-muted-foreground mt-0.5">
-          Cria uma nova conta de cliente na plataforma.
-        </p>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-[420px_minmax(0,1fr)] gap-6 items-start">
-        {/* Left — form */}
-        <GlassCard variant="solid" className="space-y-4">
-          <form
-            onSubmit={handleSubmit((d) => mut.mutate(d))}
-            className="space-y-4"
-            noValidate
-          >
-            <div className="space-y-1.5">
-              <Label htmlFor="name">Nome</Label>
-              <Input id="name" {...register("name")} placeholder="Nome completo" />
-              {errors.name && <p className="text-xs text-danger">{errors.name.message}</p>}
-            </div>
-
-            <div className="space-y-1.5">
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                type="email"
-                autoComplete="off"
-                {...register("email")}
-                placeholder="cliente@email.com"
-              />
-              {errors.email && <p className="text-xs text-danger">{errors.email.message}</p>}
-            </div>
-
-            <div className="space-y-1.5">
-              <Label htmlFor="password">Senha</Label>
-              <PasswordInput
-                id="password"
-                autoComplete="new-password"
-                placeholder="Mínimo 8 caracteres"
-                {...register("password")}
-              />
-              <PasswordStrengthIndicator password={password} />
-              {errors.password && <p className="text-xs text-danger">{errors.password.message}</p>}
-            </div>
-
-            <div className="space-y-1.5">
-              <Label>Telefone</Label>
-              <Controller
-                name="phone"
-                control={control}
-                render={({ field }) => (
-                  <PhoneInput
-                    international
-                    defaultCountry="BR"
-                    value={field.value ?? ""}
-                    onChange={(v) => field.onChange(v ?? "")}
-                    className={PHONE_CLASS}
-                  />
-                )}
-              />
-              {errors.phone && <p className="text-xs text-danger">{errors.phone.message}</p>}
-            </div>
-
-            <div className="space-y-1.5">
-              <Label htmlFor="description">Descrição</Label>
-              <textarea
-                id="description"
-                {...register("description")}
-                placeholder="Descrição do cliente..."
-                rows={3}
-                className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring/50 resize-none"
-              />
-            </div>
-
-            <div className="space-y-1.5">
-              <Label>Produto</Label>
-              <select
-                value={selectedProductId}
-                onChange={(e) => setSelectedProductId(e.target.value)}
-                className="w-full h-9 rounded-lg border border-input bg-background text-foreground px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring/50"
-              >
-                <option value="">Sem produto</option>
-                {produtos?.map((p) => (
-                  <option key={p.id} value={p.id}>{p.name}</option>
-                ))}
-              </select>
-            </div>
-
-            {allStages && allStages.length > 0 && (
-              <div className="space-y-2">
-                <Label>Etapas</Label>
-                <div className="space-y-2 max-h-48 overflow-y-auto pr-1 rounded-lg border border-input p-2">
-                  {stageGroups.filter((g) => g.stages.length > 0).map((g) => (
-                    <div key={g.folder?.id ?? "unfiled"} className="space-y-1">
-                      <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground px-2 pt-1">
-                        {g.folder?.title ?? "Sem pasta"}
-                      </p>
-                      {g.stages.map((s) => (
-                        <label
-                          key={s.id}
-                          className="flex items-center gap-2.5 rounded-lg px-2 py-1.5 hover:bg-muted/40 cursor-pointer transition-colors"
-                        >
-                          <input
-                            type="checkbox"
-                            checked={attachedIds.has(s.id)}
-                            onChange={(e) => toggleCreateStage(s.id, e.target.checked)}
-                            className="size-4 accent-[var(--color-primary)]"
-                          />
-                          <div className="min-w-0 flex-1">
-                            {s.title && <p className="text-sm font-medium break-all">{s.title}</p>}
-                            <p className={(s.title ? "text-xs text-muted-foreground" : "text-sm") + " break-all whitespace-pre-wrap"}>
-                              {s.text}
-                            </p>
-                          </div>
-                        </label>
-                      ))}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            <Button
-              type="submit"
-              variant="primary"
-              disabled={!isValid || mut.isPending}
-              className="w-full"
+      <AlertDialog open={bulkDeleting} onOpenChange={(o) => !o && setBulkDeleting(false)}>
+        <AlertDialogContent className="bg-card">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remover {selected.size} cliente(s)?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta ação removerá os clientes selecionados permanentemente.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => bulkDeleteMut.mutate()}
+              disabled={bulkDeleteMut.isPending}
             >
-              {mut.isPending ? "Cadastrando..." : "Cadastrar cliente"}
-            </Button>
-          </form>
-        </GlassCard>
-
-        {/* Right — clients table */}
-        <ClientesTable />
-      </div>
+              {bulkDeleteMut.isPending ? "Removendo..." : "Remover"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

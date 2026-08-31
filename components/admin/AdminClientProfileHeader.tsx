@@ -33,7 +33,7 @@ export function AdminClientProfileHeader({ client, onEdit }: AdminClientProfileH
             <h1 className="text-xl font-semibold">{name}</h1>
             {role === "admin" && (
               <span className="inline-flex items-center rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-semibold text-primary">
-                Equipe Atlaz
+                Equipe akeel
               </span>
             )}
             {product_name && (

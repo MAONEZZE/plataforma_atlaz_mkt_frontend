@@ -578,7 +578,7 @@ export default function AdminTrilhasPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold">Gerenciar Trilhas</h1>
+        <h1 className="text-2xl font-bold tracking-tight">Gerenciar Trilhas</h1>
         <Button
           variant="primary"
           onClick={() => setTrilhaModal({ open: true, editing: null })}
