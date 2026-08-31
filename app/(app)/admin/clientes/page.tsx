@@ -287,6 +287,7 @@ export default function AdminClientesPage() {
         open={modal.open}
         onOpenChange={(o) => setModal((p) => ({ ...p, open: o }))}
         client={modal.editing}
+        showFullViewLink
         onSuccess={invalidate}
       />
 

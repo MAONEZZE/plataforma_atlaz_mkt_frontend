@@ -388,6 +388,19 @@
   background-color: hsl(var(--ink-400));
 }
 
+/* Rola normalmente (roda, trackpad, teclado), só não desenha a barra. Para
+   caixas de altura fixa onde a barra visível atrapalharia o layout.
+   Classe simples de propósito: o `*` acima é unlayered e venceria um
+   @utility do Tailwind, que sai dentro de @layer utilities. */
+.no-scrollbar {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
 @media (max-width: 768px) {
   :root {
     --glass-blur: 16px;

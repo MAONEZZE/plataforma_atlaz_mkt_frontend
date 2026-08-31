@@ -4,11 +4,11 @@ import { useEffect, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { FileUp, X, FileText } from "lucide-react";
 import { adminAulas } from "@/lib/api/admin";
-import type { Aula } from "@/lib/api/conteudo";
+import { getTrilha, type Aula, type Trilha } from "@/lib/api/conteudo";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -41,7 +41,10 @@ interface AulaModalProps {
   open: boolean;
   onOpenChange: (v: boolean) => void;
   moduleId: string;
+  trackId: string;
   editingAula: Aula | null;
+  /** Trilhas disponíveis como destino ao mover uma aula já existente. */
+  trilhas: Trilha[];
   onSuccess: () => void;
 }
 
@@ -49,12 +52,26 @@ export function AulaModal({
   open,
   onOpenChange,
   moduleId,
+  trackId,
   editingAula,
+  trilhas,
   onSuccess,
 }: AulaModalProps) {
   const fileRef = useRef<HTMLInputElement>(null);
   const [mode, setMode] = useState<"video" | "doc">("video");
   const [docFile, setDocFile] = useState<File | null>(null);
+  const [targetTrackId, setTargetTrackId] = useState(trackId);
+  const [targetModuleId, setTargetModuleId] = useState(moduleId);
+
+  // Só a trilha escolhida traz seus módulos; por isso o destino é em dois passos.
+  const { data: targetTrack, isFetching: loadingModules } = useQuery({
+    queryKey: ["trilha", targetTrackId],
+    queryFn: () => getTrilha(targetTrackId),
+    enabled: open && !!editingAula && !!targetTrackId,
+  });
+  const targetModules = targetTrack
+    ? [...targetTrack.modules].sort((a, b) => a.order - b.order)
+    : [];
 
   const {
     register,
@@ -72,6 +89,8 @@ export function AulaModal({
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setMode(initialMode);
       setDocFile(null);
+      setTargetTrackId(trackId);
+      setTargetModuleId(moduleId);
       reset({
         title: editingAula?.title ?? "",
         description: "",
@@ -80,7 +99,14 @@ export function AulaModal({
         order: editingAula?.order ?? 0,
       });
     }
-  }, [open, editingAula, reset]);
+  }, [open, trackId, moduleId, editingAula, reset]);
+
+  function handleTrackChange(nextTrackId: string) {
+    setTargetTrackId(nextTrackId);
+    // O módulo atual não pertence à nova trilha; escolher um só faz sentido
+    // depois que os módulos dela carregarem.
+    setTargetModuleId(nextTrackId === trackId ? moduleId : "");
+  }
 
   function handleDocChange(e: React.ChangeEvent<HTMLInputElement>) {
     const f = e.target.files?.[0];
@@ -101,8 +127,22 @@ export function AulaModal({
     if (fileRef.current) fileRef.current.value = "";
   }
 
+  const isMoving = !!editingAula && !!targetModuleId && targetModuleId !== moduleId;
+
+  /**
+   * Ao mudar de módulo, manda `module_id` e omite `order`: o backend anexa no fim
+   * do destino, enquanto reaproveitar a posição antiga colidiria com as aulas
+   * que já estão lá.
+   */
+  function placement(order: number | undefined) {
+    return isMoving ? { module_id: targetModuleId } : { order: order ?? 0 };
+  }
+
   const mut = useMutation({
     mutationFn: async (data: FormData) => {
+      if (editingAula && !targetModuleId) {
+        throw new Error("Escolha o módulo de destino.");
+      }
       if (mode === "doc") {
         if (!docFile && !editingAula) {
           throw new Error("Selecione um documento.");
@@ -114,13 +154,12 @@ export function AulaModal({
         const payload = {
           title: data.title,
           is_doc: true,
-          order: data.order ?? 0,
           ...(document_url ? { document_url } : {}),
         };
         if (editingAula) {
-          return adminAulas.update(editingAula.id, payload);
+          return adminAulas.update(editingAula.id, { ...payload, ...placement(data.order) });
         }
-        return adminAulas.create({ module_id: moduleId, ...payload });
+        return adminAulas.create({ module_id: moduleId, order: data.order ?? 0, ...payload });
       }
 
       if (!data.drive_url) throw new Error("URL do Google Drive obrigatória.");
@@ -136,17 +175,16 @@ export function AulaModal({
         description: data.description || undefined,
         drive_url: data.drive_url,
         is_doc: false,
-        order: data.order ?? 0,
         duration_minutes:
           typeof dur === "number" && Number.isFinite(dur) && dur >= 0 ? Math.floor(dur) : undefined,
       };
       if (editingAula) {
-        return adminAulas.update(editingAula.id, payload);
+        return adminAulas.update(editingAula.id, { ...payload, ...placement(data.order) });
       }
-      return adminAulas.create({ module_id: moduleId, ...payload });
+      return adminAulas.create({ module_id: moduleId, order: data.order ?? 0, ...payload });
     },
     onSuccess: () => {
-      toast.success(editingAula ? "Aula atualizada!" : "Aula criada!");
+      toast.success(isMoving ? "Aula movida!" : editingAula ? "Aula atualizada!" : "Aula criada!");
       onSuccess();
       onOpenChange(false);
     },
@@ -246,6 +284,48 @@ export function AulaModal({
                 />
               </div>
             </>
+          )}
+
+          {editingAula && (
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div className="space-y-1.5">
+                <Label>Trilha</Label>
+                <select
+                  value={targetTrackId}
+                  onChange={(e) => handleTrackChange(e.target.value)}
+                  className="w-full h-9 rounded-lg border border-input bg-background text-foreground px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring/50"
+                >
+                  {trilhas.map((t) => (
+                    <option key={t.id} value={t.id}>{t.title}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="space-y-1.5">
+                <Label>Módulo</Label>
+                <select
+                  value={targetModuleId}
+                  onChange={(e) => setTargetModuleId(e.target.value)}
+                  disabled={loadingModules}
+                  className="w-full h-9 rounded-lg border border-input bg-background text-foreground px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring/50 disabled:opacity-60"
+                >
+                  <option value="">
+                    {loadingModules
+                      ? "Carregando..."
+                      : targetModules.length === 0
+                        ? "Trilha sem módulos"
+                        : "Escolher módulo"}
+                  </option>
+                  {targetModules.map((m) => (
+                    <option key={m.id} value={m.id}>{m.title}</option>
+                  ))}
+                </select>
+              </div>
+              {isMoving && (
+                <p className="text-xs text-muted-foreground sm:col-span-2">
+                  A aula vai para o fim do módulo escolhido.
+                </p>
+              )}
+            </div>
           )}
 
           <DialogFooter>

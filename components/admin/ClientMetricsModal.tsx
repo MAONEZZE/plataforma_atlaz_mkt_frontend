@@ -68,7 +68,7 @@ export function ClientMetricsModal({ clientId, clientName, onOpenChange }: Clien
               variant="primary"
               onClick={() => clientId && router.push(`/admin/clientes/${clientId}`)}
             >
-              Visualização completa do cliente
+              Visualização completa
             </Button>
           </div>
         </div>

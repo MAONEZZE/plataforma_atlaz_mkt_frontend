@@ -1,13 +1,13 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useMutation } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { adminModulos } from "@/lib/api/admin";
-import type { Modulo } from "@/lib/api/conteudo";
+import type { Modulo, Trilha } from "@/lib/api/conteudo";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -31,6 +31,8 @@ interface ModuloModalProps {
   onOpenChange: (v: boolean) => void;
   trackId: string;
   editingModulo: Modulo | null;
+  /** Trilhas disponíveis como destino ao mover um módulo já existente. */
+  trilhas: Trilha[];
   onSuccess: () => void;
 }
 
@@ -39,8 +41,11 @@ export function ModuloModal({
   onOpenChange,
   trackId,
   editingModulo,
+  trilhas,
   onSuccess,
 }: ModuloModalProps) {
+  const [targetTrackId, setTargetTrackId] = useState(trackId);
+
   const {
     register,
     handleSubmit,
@@ -53,20 +58,26 @@ export function ModuloModal({
 
   useEffect(() => {
     if (open) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setTargetTrackId(trackId);
       reset({
         title: editingModulo?.title ?? "",
         description: editingModulo?.description ?? "",
         order: editingModulo?.order ?? 0,
       });
     }
-  }, [open, editingModulo, reset]);
+  }, [open, trackId, editingModulo, reset]);
+
+  const isMoving = !!editingModulo && targetTrackId !== trackId;
 
   const mut = useMutation({
     mutationFn: (data: FormData) => {
       const payload = {
         title: data.title,
         description: data.description || undefined,
-        order: data.order ?? 0,
+        // Ao mudar de trilha, deixa o backend anexar no fim: reaproveitar a
+        // posição antiga colidiria com os módulos que já estão no destino.
+        ...(isMoving ? { track_id: targetTrackId } : { order: data.order ?? 0 }),
       };
       if (editingModulo) {
         return adminModulos.update(editingModulo.id, payload);
@@ -74,7 +85,9 @@ export function ModuloModal({
       return adminModulos.create({ track_id: trackId, ...payload });
     },
     onSuccess: () => {
-      toast.success(editingModulo ? "Módulo atualizado!" : "Módulo criado!");
+      toast.success(
+        isMoving ? "Módulo movido!" : editingModulo ? "Módulo atualizado!" : "Módulo criado!",
+      );
       onSuccess();
       onOpenChange(false);
     },
@@ -101,6 +114,25 @@ export function ModuloModal({
             <Label>Descrição (opcional)</Label>
             <Input {...register("description")} />
           </div>
+          {editingModulo && (
+            <div className="space-y-1.5">
+              <Label>Trilha</Label>
+              <select
+                value={targetTrackId}
+                onChange={(e) => setTargetTrackId(e.target.value)}
+                className="w-full h-9 rounded-lg border border-input bg-background text-foreground px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring/50"
+              >
+                {trilhas.map((t) => (
+                  <option key={t.id} value={t.id}>{t.title}</option>
+                ))}
+              </select>
+              {isMoving && (
+                <p className="text-xs text-muted-foreground">
+                  O módulo e suas aulas vão para o fim da trilha escolhida.
+                </p>
+              )}
+            </div>
+          )}
           <DialogFooter>
             <button
               type="button"

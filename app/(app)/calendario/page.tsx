@@ -45,7 +45,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 
-type MenteeScope = "all" | "mine" | "general";
+type MenteeScope = "Todos" | "Meus eventos";
 
 interface NormalizedEvent {
   id: string;
@@ -65,7 +65,7 @@ export default function CalendarioPage() {
   const queryClient = useQueryClient();
 
   const [year, setYear] = useState(() => getCalendarYear());
-  const [menteeScope, setMenteeScope] = useState<MenteeScope>("all");
+  const [menteeScope, setMenteeScope] = useState<MenteeScope>("Todos");
   const [creating, setCreating] = useState(false);
   const [createDate, setCreateDate] = useState<string | undefined>(undefined);
   const [editing, setEditing] = useState<EventOut | null>(null);
@@ -116,8 +116,8 @@ export default function CalendarioPage() {
 
   const filteredEvents = useMemo(() => {
     if (isAdmin) return allEvents.filter((e) => e.is_global);
-    if (menteeScope === "mine") return allEvents.filter((e) => !e.is_global);
-    if (menteeScope === "general") return allEvents.filter((e) => e.is_global);
+    if (menteeScope === "Meus eventos") return allEvents.filter((e) => !e.is_global);
+    if (menteeScope === "Todos") return allEvents.filter((e) => e.is_global);
     return allEvents;
   }, [allEvents, isAdmin, menteeScope]);
 
@@ -215,9 +215,8 @@ export default function CalendarioPage() {
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">Todas</SelectItem>
-              <SelectItem value="mine">Minhas datas</SelectItem>
-              <SelectItem value="general">Datas gerais</SelectItem>
+              <SelectItem value="Todos">Todos</SelectItem>
+              <SelectItem value="Meus eventos">Meus eventos</SelectItem>
             </SelectContent>
           </Select>
         )}
